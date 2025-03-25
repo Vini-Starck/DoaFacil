@@ -36,3 +36,10 @@
     transform: rotate(360deg);
   }
 }
+
+header nav ul li a {
+  color: black !important;
+  text-decoration: none;
+  font-size: 18px;
+}
+
