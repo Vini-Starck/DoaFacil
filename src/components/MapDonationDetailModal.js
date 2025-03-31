@@ -1,10 +1,10 @@
-// src/components/DonationDetailModal.js
+// src/components/MapDonationDetailModal.js
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
+import { useAuth } from "../AuthContext"; // Se precisar do currentUser
 
 // Função para calcular o tempo relativo (ex: "2 horas atrás")
 const getRelativeTime = (date) => {
@@ -20,9 +20,10 @@ const getRelativeTime = (date) => {
   return `${days} dias atrás`;
 };
 
-const DonationDetailModal = ({ donation, onClose }) => {
+const MapDonationDetailModal = ({ donation, onClose }) => {
   const navigate = useNavigate();
   const [creatorData, setCreatorData] = useState(null);
+  const { currentUser } = useAuth(); // Obtém o usuário logado
 
   // Buscar os dados do criador da doação
   useEffect(() => {
@@ -42,15 +43,50 @@ const DonationDetailModal = ({ donation, onClose }) => {
     fetchCreator();
   }, [donation.userId]);
 
-  // Tile layer dark para o mini mapa
-  const darkTileLayer =
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  // Função para checar se o usuário atual já possui chat com o doador
+  const handleContactClick = async () => {
+    try {
+      // Impede que o doador tente contatar a si mesmo
+      if (currentUser?.uid === donation.userId) {
+        alert("Você é o criador desta doação.");
+        return;
+      }
+
+      // Consulta todos os chats em que o usuário atual participa
+      const q = query(
+        collection(db, "chats"),
+        where("participants", "array-contains", currentUser?.uid)
+      );
+      const snapshot = await getDocs(q);
+
+      // Verifica se já existe um chat cujo array de participants inclua o doador
+      const chatExists = snapshot.docs.some((docSnap) => {
+        const participants = docSnap.data().participants || [];
+        return participants.includes(donation.userId);
+      });
+
+      if (chatExists) {
+        // Se já existir chat, exibe mensagem
+        alert("Você já tem um chat com este usuário.");
+      } else {
+        // Se não existir, segue para a página de contato
+        navigate(`/contact/${donation.userId}/${donation.id}`);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Erro ao verificar chat existente:", error);
+      alert("Ocorreu um erro ao verificar o chat.");
+    }
+  };
 
   return (
     <div
       style={{
         position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         backgroundColor: "rgba(0, 0, 0, 0.7)",
         display: "flex",
         justifyContent: "center",
@@ -90,9 +126,7 @@ const DonationDetailModal = ({ donation, onClose }) => {
         <h2 style={{ textAlign: "center", marginBottom: "10px", color: "#333" }}>
           {donation.title}
         </h2>
-        <p style={{ textAlign: "center", color: "#666" }}>
-          {donation.description}
-        </p>
+        <p style={{ textAlign: "center", color: "#666" }}>{donation.description}</p>
 
         {donation.imageUrl && (
           <div style={{ textAlign: "center", margin: "20px 0" }}>
@@ -101,7 +135,12 @@ const DonationDetailModal = ({ donation, onClose }) => {
                 donation.imageUrl
               )}?alt=media`}
               alt="Imagem da doação"
-              style={{ width: "100%", maxWidth: "400px", borderRadius: "8px", objectFit: "cover" }}
+              style={{
+                width: "100%",
+                maxWidth: "400px",
+                borderRadius: "8px",
+                objectFit: "cover",
+              }}
             />
           </div>
         )}
@@ -129,23 +168,6 @@ const DonationDetailModal = ({ donation, onClose }) => {
             ))}
         </div>
 
-        {/* Mini mapa com localização */}
-        {donation.latitude && donation.longitude && (
-          <div style={{ margin: "20px 0" }}>
-            <MapContainer
-              center={[donation.latitude, donation.longitude]}
-              zoom={15}
-              style={{ height: "200px", width: "100%" }}
-            >
-              <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
-                url={darkTileLayer}
-              />
-              <Marker position={[donation.latitude, donation.longitude]} />
-            </MapContainer>
-          </div>
-        )}
-
         {/* Tempo de criação */}
         {donation.createdAt && donation.createdAt.toDate && (
           <p style={{ textAlign: "center", color: "#999", fontSize: "12px" }}>
@@ -155,7 +177,15 @@ const DonationDetailModal = ({ donation, onClose }) => {
 
         {/* Informações do criador */}
         {creatorData && (
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", justifyContent: "center", marginTop: "20px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              justifyContent: "center",
+              marginTop: "20px",
+            }}
+          >
             <img
               src={creatorData.photoURL || "/icons/default-profile.png"}
               alt="Criador"
@@ -169,30 +199,24 @@ const DonationDetailModal = ({ donation, onClose }) => {
 
         {/* Botão de entrar em contato */}
         <div style={{ marginTop: "20px", textAlign: "center" }}>
-
           <button
-            onClick={() => {
-                navigate(`/contact/${donation.userId}/${donation.id}`);
-                onClose(); // Fecha o modal
-            }}
+            onClick={handleContactClick}
             style={{
-                padding: "10px 20px",
-                backgroundColor: "#007bff",
-                color: "#fff",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-                fontSize: "16px",
+              padding: "10px 20px",
+              backgroundColor: "#007bff",
+              color: "#fff",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+              fontSize: "16px",
             }}
-            >
+          >
             Entrar em Contato
-        </button>
-
-
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default DonationDetailModal;
+export default MapDonationDetailModal;

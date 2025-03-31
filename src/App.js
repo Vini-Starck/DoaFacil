@@ -4,7 +4,7 @@ import "./App.css";
 import { db, auth } from "./config/firebase";
 import { getDocs, collection } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -18,7 +18,7 @@ import ChatPage from "./components/ChatPage";
 import NotificationsPage from "./components/NotificationsPage";
 import ContactProfilePage from "./components/Contact";
 import Donations from "./components/Donations";
-import DonationDetailModal from "./components/DonationDetailModal"; // Se você estiver usando modal para detalhes
+import DonationDetailModal from "./components/DonationDetailModal";
 import MyDonations from "./components/MyDonations";
 import PrivateRoute from "./components/PrivateRoute";
 
@@ -70,7 +70,7 @@ function App() {
     <div
       className="App"
       style={{
-        background: "linear-gradient(to bottom, #fff, #000)",
+        background: "linear-gradient(135deg, #28a745, #007bff)",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",

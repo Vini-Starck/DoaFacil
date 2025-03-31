@@ -13,12 +13,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
-import { useNavigate } from "react-router-dom";
 
 const NotificationsPage = () => {
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!currentUser) return;

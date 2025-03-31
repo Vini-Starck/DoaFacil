@@ -1,5 +1,4 @@
-// src/components/Header.js
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import ProfileMenu from "./ProfileMenu";
 import notificationIcon from "../icons/notification.png";
@@ -12,7 +11,12 @@ const Header = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationsCount, setNotificationsCount] = useState(0);
 
-  useEffect(() => {
+  // Estados para hover
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [hoveredNotification, setHoveredNotification] = useState(false);
+  const [hoveredProfile, setHoveredProfile] = useState(false);
+
+  React.useEffect(() => {
     if (!currentUser) return;
 
     const q = query(
@@ -22,7 +26,6 @@ const Header = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("Notificações encontradas:", snapshot.docs.length);
       setNotificationsCount(snapshot.docs.length);
     });
 
@@ -38,128 +41,84 @@ const Header = () => {
   };
 
   return (
-    <header
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 20px",
-        background: "transparent",
-      }}
-    >
-      <div>
-        <Link
-          to="/"
-          style={{
-            textDecoration: "none",
-            color: "#000",
-            fontSize: "24px",
-            fontWeight: "bold",
-          }}
-        >
-          DoaFácil
-        </Link>
-      </div>
+    <header style={styles.header}>
+      <Link to="/" style={styles.logo}>
+        DoaFácil
+      </Link>
+
       <nav>
-        <ul
-          style={{
-            display: "flex",
-            listStyleType: "none",
-            margin: 0,
-            padding: 0,
-            gap: "20px",
-          }}
-        >
-          <li>
-            <Link to="/donations" style={{ textDecoration: "none", color: "#000" }}>
-              Doações
-            </Link>
-          </li>
-          <li>
-            <Link to="/add-donation" style={{ textDecoration: "none", color: "#000" }}>
-              Fazer uma doação
-            </Link>
-          </li>
-          <li>
-            <Link to="/chat" style={{ textDecoration: "none", color: "#000" }}>
-              Chat
-            </Link>
-          </li>
-          <li>
-            <Link to="/map" style={{ textDecoration: "none", color: "#000" }}>
-              Mapa
-            </Link>
-          </li>
+        <ul style={styles.navList}>
+          {[
+            { name: "Doações", path: "/donations" },
+            { name: "Doar", path: "/add-donation" },
+            { name: "Chat", path: "/chat" },
+            { name: "Mapa", path: "/map" },
+            { name: "Notificações", path: "/notifications" },
+          ].map((item, index) => (
+            <li
+              key={index}
+              onMouseEnter={() => setHoveredItem(index)}
+              onMouseLeave={() => setHoveredItem(null)}
+              style={{
+                ...styles.navItem,
+                transform: hoveredItem === index ? "scale(1.1)" : "scale(1)",
+                transition: "transform 0.3s ease",
+              }}
+            >
+              <Link to={item.path} style={styles.navLink}>
+                {item.name}
+              </Link>
+            </li>
+          ))}
         </ul>
       </nav>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+
+      <div style={styles.rightSection}>
         {currentUser ? (
           <>
-            {/* Ícone de notificações com badge */}
-            <Link to="/notifications">
-              <div style={{ position: "relative", display: "inline-block" }}>
-                <img
-                  src={notificationIcon}
-                  alt="Notificações"
-                  style={{
-                    width: "30px",
-                    height: "30px",
-                    cursor: "pointer",
-                    objectFit: "cover",
-                  }}
-                />
-                {notificationsCount > 0 && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "0px",
-                      right: "0px",
-                      background: "red",
-                      color: "#fff",
-                      borderRadius: "50%",
-                      padding: "2px 5px",
-                      fontSize: "10px",
-                      fontWeight: "bold",
-                      minWidth: "20px",
-                      textAlign: "center",
-                      lineHeight: "1",
-                      zIndex: 10,
-                    }}
-                  >
-                    {notificationsCount >= 10 ? "10+" : notificationsCount}
-                  </span>
-                )}
-              </div>
+            {/* Notificações */}
+            <Link
+              to="/notifications"
+              style={{
+                ...styles.notificationContainer,
+                transform: hoveredNotification ? "scale(1.1) rotate(-3deg)" : "scale(1)",
+                transition: "transform 0.2s ease",
+              }}
+              onMouseEnter={() => setHoveredNotification(true)}
+              onMouseLeave={() => setHoveredNotification(false)}
+            >
+              <img src={notificationIcon} alt="Notificações" style={styles.notificationIcon} />
+              {notificationsCount > 0 && (
+                <span style={styles.notificationBadge}>
+                  {notificationsCount >= 10 ? "10+" : notificationsCount}
+                </span>
+              )}
             </Link>
+
+            {/* Foto de perfil */}
             <div style={{ position: "relative" }}>
               <img
                 src={currentUser.photoURL || "/icons/default-profile.png"}
                 alt="Perfil"
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  objectFit: "cover",
+                  ...styles.profileImage,
+                  boxShadow: hoveredProfile ? "0 0 12px rgba(255, 255, 255, 0.6)" : "none",
+                  transform: hoveredProfile ? "scale(1.1)" : "scale(1)",
+                  transition: "all 0.3s ease",
                 }}
+                onMouseEnter={() => setHoveredProfile(true)}
+                onMouseLeave={() => setHoveredProfile(false)}
                 onClick={handleProfileClick}
               />
-              <ProfileMenu
-                currentUser={currentUser}
-                anchorEl={anchorEl}
-                onClose={handleProfileMenuClose}
-              />
+              <ProfileMenu currentUser={currentUser} anchorEl={anchorEl} onClose={handleProfileMenuClose} />
             </div>
           </>
         ) : (
-          <div>
-            <Link
-              to="/login"
-              style={{ marginRight: "10px", textDecoration: "none", color: "#000" }}
-            >
+          <div style={styles.authButtons}>
+            <Link to="/login" style={styles.authLink}>
               Logar
             </Link>
-            <Link to="/register" style={{ textDecoration: "none", color: "#000" }}>
+            <Link to="/register" style={styles.authLink}>
               Criar Conta
             </Link>
           </div>
@@ -167,6 +126,99 @@ const Header = () => {
       </div>
     </header>
   );
+};
+
+const styles = {
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "12px 24px",
+    background: "rgba(255, 255, 255, 0.1)",
+    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+    backdropFilter: "blur(10px)",
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+    borderRadius: "0 0 12px 12px",
+    transition: "all 0.3s ease-in-out",
+  },
+  logo: {
+    textDecoration: "none",
+    color: "#fff",
+    fontSize: "24px",
+    fontWeight: "bold",
+    letterSpacing: "1px",
+    transition: "color 0.3s",
+  },
+  navList: {
+    display: "flex",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+    gap: "20px",
+  },
+  navItem: {
+    position: "relative",
+  },
+  navLink: {
+    textDecoration: "none",
+    color: "#fff",
+    fontSize: "16px",
+    fontWeight: "500",
+    padding: "10px 14px",
+    borderRadius: "6px",
+    transition: "transform 0.3s, background 0.3s",
+  },
+  rightSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: "15px",
+  },
+  notificationContainer: {
+    position: "relative",
+    display: "inline-block",
+  },
+  notificationIcon: {
+    width: "28px",
+    height: "28px",
+    cursor: "pointer",
+    objectFit: "cover",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: "-5px",
+    right: "-5px",
+    background: "red",
+    color: "#fff",
+    borderRadius: "50%",
+    padding: "3px 6px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    minWidth: "20px",
+    textAlign: "center",
+    lineHeight: "1",
+    animation: "pulse 1.5s infinite",
+  },
+  profileImage: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    cursor: "pointer",
+    objectFit: "cover",
+    border: "2px solid rgba(255, 255, 255, 0.5)",
+  },
+  authButtons: {
+    display: "flex",
+    gap: "12px",
+  },
+  authLink: {
+    textDecoration: "none",
+    color: "#fff",
+    fontSize: "16px",
+    fontWeight: "500",
+    transition: "color 0.3s, box-shadow 0.3s",
+  },
 };
 
 export default Header;

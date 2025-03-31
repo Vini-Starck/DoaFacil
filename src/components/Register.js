@@ -22,7 +22,6 @@ const Register = () => {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName });
-      // Cria o documento na coleção "users", passando também o CPF
       await createUserDocumentIfNotExists(user, { cpf });
       navigate('/');
     } catch (error) {
@@ -34,9 +33,7 @@ const Register = () => {
     const provider = new GoogleAuthProvider();
     try {
       const { user } = await signInWithPopup(auth, provider);
-      // Opcional: atualizar o profile do usuário com o displayName do Google, se necessário
       await updateProfile(user, { displayName: user.displayName });
-      // Cria o documento na coleção "users", passando também a photoURL obtida do Google
       await createUserDocumentIfNotExists(user, { photoURL: user.photoURL });
       navigate('/');
     } catch (error) {
@@ -44,59 +41,143 @@ const Register = () => {
     }
   };
 
+  const styles = {
+    page: {
+      background: "linear-gradient(135deg, #28a745, #007bff)",
+      minHeight: "100vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: "20px",
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    },
+    container: {
+      maxWidth: "400px",
+      width: "100%",
+      background: "#fff",
+      borderRadius: "8px",
+      boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+      padding: "30px 20px",
+      textAlign: "center",
+    },
+    title: {
+      marginBottom: "20px",
+      color: "#333",
+      fontSize: "28px",
+      fontWeight: "bold",
+    },
+    form: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "15px",
+      textAlign: "left",
+    },
+    label: {
+      fontSize: "16px",
+      marginBottom: "5px",
+      color: "#555",
+    },
+    input: {
+      width: "100%",
+      padding: "12px",
+      borderRadius: "5px",
+      border: "1px solid #ccc",
+      fontSize: "16px",
+      outline: "none",
+      boxSizing: "border-box",
+    },
+    button: {
+      width: "100%",
+      padding: "12px",
+      borderRadius: "5px",
+      border: "none",
+      fontSize: "16px",
+      cursor: "pointer",
+      transition: "opacity 0.2s",
+    },
+    registerButton: {
+      backgroundColor: "#28a745",
+      color: "#fff",
+    },
+    googleButton: {
+      backgroundColor: "#db4437",
+      color: "#fff",
+    },
+    hr: {
+      margin: "20px 0",
+      border: "none",
+      borderTop: "1px solid #eee",
+    },
+  };
+
+  // Efeitos de hover para os botões
+  const handleHover = (e) => e.target.style.opacity = 0.8;
+  const handleLeave = (e) => e.target.style.opacity = 1;
+
   return (
-    <div style={{ maxWidth: "400px", margin: "0 auto", padding: "20px", background: "#fff", borderRadius: "8px", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
-      <h2 style={{ textAlign: "center" }}>Criar Conta</h2>
-      <form onSubmit={handleRegister}>
-        <input 
-          type="text" 
-          placeholder="Nome" 
-          value={displayName} 
-          onChange={(e)=>setDisplayName(e.target.value)} 
-          style={{ width:"100%", padding:"10px", marginBottom:"10px", borderRadius:"5px", border:"1px solid #ccc" }} 
-        />
-        <input 
-          type="text" 
-          placeholder="CPF" 
-          value={cpf} 
-          onChange={(e)=>setCpf(e.target.value)}
-          style={{ width:"100%", padding:"10px", marginBottom:"10px", borderRadius:"5px", border:"1px solid #ccc" }} 
-        />
-        <input 
-          type="email" 
-          placeholder="Email" 
-          value={email} 
-          onChange={(e)=>setEmail(e.target.value)}
-          style={{ width:"100%", padding:"10px", marginBottom:"10px", borderRadius:"5px", border:"1px solid #ccc" }} 
-        />
-        <input 
-          type="password" 
-          placeholder="Senha" 
-          value={password} 
-          onChange={(e)=>setPassword(e.target.value)}
-          style={{ width:"100%", padding:"10px", marginBottom:"10px", borderRadius:"5px", border:"1px solid #ccc" }} 
-        />
-        <input 
-          type="password" 
-          placeholder="Confirmar Senha" 
-          value={confirmPassword} 
-          onChange={(e)=>setConfirmPassword(e.target.value)}
-          style={{ width:"100%", padding:"10px", marginBottom:"10px", borderRadius:"5px", border:"1px solid #ccc" }} 
-        />
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <h2 style={styles.title}>Criar Conta</h2>
+        <form onSubmit={handleRegister} style={styles.form}>
+          <label style={styles.label}>Nome</label>
+          <input 
+            type="text" 
+            placeholder="Seu nome completo" 
+            value={displayName} 
+            onChange={(e)=>setDisplayName(e.target.value)} 
+            style={styles.input} 
+          />
+          <label style={styles.label}>CPF</label>
+          <input 
+            type="text" 
+            placeholder="Seu CPF" 
+            value={cpf} 
+            onChange={(e)=>setCpf(e.target.value)}
+            style={styles.input} 
+          />
+          <label style={styles.label}>Email</label>
+          <input 
+            type="email" 
+            placeholder="Seu email" 
+            value={email} 
+            onChange={(e)=>setEmail(e.target.value)}
+            style={styles.input} 
+          />
+          <label style={styles.label}>Senha</label>
+          <input 
+            type="password" 
+            placeholder="Digite sua senha" 
+            value={password} 
+            onChange={(e)=>setPassword(e.target.value)}
+            style={styles.input} 
+          />
+          <label style={styles.label}>Confirmar Senha</label>
+          <input 
+            type="password" 
+            placeholder="Confirme sua senha" 
+            value={confirmPassword} 
+            onChange={(e)=>setConfirmPassword(e.target.value)}
+            style={styles.input} 
+          />
+          <button 
+            type="submit" 
+            style={{ ...styles.button, ...styles.registerButton }}
+            onMouseEnter={handleHover}
+            onMouseLeave={handleLeave}
+          >
+            Criar Conta
+          </button>
+        </form>
+        <hr style={styles.hr} />
         <button 
-          type="submit" 
-          style={{ width:"100%", padding:"10px", backgroundColor:"#28a745", color:"#fff", border:"none", borderRadius:"5px", cursor:"pointer" }}
+          onClick={handleGoogleRegister} 
+          style={{ ...styles.button, ...styles.googleButton }}
+          onMouseEnter={handleHover}
+          onMouseLeave={handleLeave}
         >
-          Criar Conta
+          Criar Conta com Google
         </button>
-      </form>
-      <hr style={{ margin: "20px 0" }} />
-      <button 
-        onClick={handleGoogleRegister} 
-        style={{ width:"100%", padding:"10px", backgroundColor:"#db4437", color:"#fff", border:"none", borderRadius:"5px", cursor:"pointer" }}
-      >
-        Criar Conta com Google
-      </button>
+      </div>
     </div>
   );
 };
