@@ -1,7 +1,7 @@
 // src/components/Profile.js
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../AuthContext";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { signOut, updateProfile } from "firebase/auth";
 import { auth, storage, db } from "../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -17,7 +17,6 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { deleteUserAndDonations } from "../utils/userUtils";
-import { handleSendMessage } from "../utils/chatUtils";
 
 const Profile = () => {
   const { uid } = useParams();

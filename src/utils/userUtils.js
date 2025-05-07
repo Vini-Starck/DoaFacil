@@ -1,5 +1,5 @@
 // src/utils/userUtils.js
-import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc, runTransaction } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, getDocs, runTransaction } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import { deleteUser } from "firebase/auth";
 

@@ -1,5 +1,5 @@
 // src/App.js
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "./App.css";
 import { db, auth } from "./config/firebase";
 import { getDocs, collection } from "firebase/firestore";
@@ -30,7 +30,7 @@ function App() {
 
   const donationsCollectionRef = collection(db, "donationItems");
 
-  const getDonationList = async () => {
+  const getDonationList = useCallback(async () => {
     try {
       const data = await getDocs(donationsCollectionRef);
       const filteredData = data.docs.map((doc) => ({
@@ -41,7 +41,7 @@ function App() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [donationsCollectionRef]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -53,7 +53,7 @@ function App() {
       }
     });
     return unsubscribe;
-  }, []);
+  }, [getDonationList]);
 
   // Filtra para exibir somente doações criadas por outros usuários
   const filteredDonations = donationList.filter(
@@ -78,35 +78,56 @@ function App() {
     >
       <Header currentUser={currentUser} />
       <main style={{ flex: 1 }}>
-
-        
-
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-        
+
           {/* Rotas protegidas */}
-          <Route path="/donations" element={<PrivateRoute element={<Donations
-                donations={filteredDonations}
-                onDonationClick={handleDonationClick}
-              />}/>}/>
-          <Route path="/profile/:uid" element={<PrivateRoute element={<Profile />} />} />
-          <Route path="/add-donation" element={<PrivateRoute element={<AddDonation />} />} />
-          <Route path="/my-donations" element={<PrivateRoute element={<MyDonations />} />} />
-          <Route path="/chat/:chatId?" element={<PrivateRoute element={<ChatPage />} />} />
-          <Route path="/map" element={<PrivateRoute element={<MapPage />} />} />
-          <Route path="/notifications" element={<PrivateRoute element={<NotificationsPage />} />} />
-          <Route path="/contact/:userId/:donationId" element={<PrivateRoute element={<ContactProfilePage />} />} />
-      </Routes>
-
-
-
-
-
-
-
-
+          <Route
+            path="/donations"
+            element={
+              <PrivateRoute
+                element={
+                  <Donations
+                    donations={filteredDonations}
+                    onDonationClick={handleDonationClick}
+                  />
+                }
+              />
+            }
+          />
+          <Route
+            path="/profile/:uid"
+            element={<PrivateRoute element={<Profile />} />}
+          />
+          <Route
+            path="/add-donation"
+            element={<PrivateRoute element={<AddDonation />} />}
+          />
+          <Route
+            path="/my-donations"
+            element={<PrivateRoute element={<MyDonations />} />}
+          />
+          <Route
+            path="/chat/:chatId?"
+            element={<PrivateRoute element={<ChatPage />} />}
+          />
+          <Route
+            path="/map"
+            element={<PrivateRoute element={<MapPage />} />}
+          />
+          <Route
+            path="/notifications"
+            element={<PrivateRoute element={<NotificationsPage />} />}
+          />
+          <Route
+            path="/contact/:userId/:donationId"
+            element={
+              <PrivateRoute element={<ContactProfilePage />} />
+            }
+          />
+        </Routes>
       </main>
       <Footer />
       {/* Modal de detalhes da doação */}
