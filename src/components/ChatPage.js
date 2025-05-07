@@ -1,13 +1,14 @@
 // src/components/ChatPage.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   collection,
   query,
   orderBy,
   onSnapshot,
   addDoc,
+  updateDoc,
   where,
   doc,
   getDoc,
@@ -18,276 +19,319 @@ import { db } from "../config/firebase";
 const ChatPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-
+  const { chatId: routeChatId } = useParams();
+  
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef(null);
+  const prevMessagesLength = useRef(null);
 
+  // Protege rota
   useEffect(() => {
-    if (!currentUser) {
-      navigate("/");
-    }
+    if (!currentUser) navigate("/");
   }, [currentUser, navigate]);
 
-  // Buscar apenas os chats do usuário atual
+  // Carrega chats ordenados por última mensagem
   useEffect(() => {
     if (!currentUser) return;
-
     const q = query(
       collection(db, "chats"),
-      where("participants", "array-contains", currentUser.uid), // Apenas chats em que o usuário está participando
+      where("participants", "array-contains", currentUser.uid),
       orderBy("lastMessageAt", "desc")
     );
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const chatData = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
+    const unsub = onSnapshot(q, async snap => {
+      const data = await Promise.all(
+        snap.docs.map(async docSnap => {
           const chat = { id: docSnap.id, ...docSnap.data() };
-
-          // Identifica o outro participante do chat
-          const otherUserId = chat.participants.find(
-            (id) => id !== currentUser.uid
-          );
-
-          if (otherUserId) {
-            const userDoc = await getDoc(doc(db, "users", otherUserId));
-            if (userDoc.exists()) {
-              // Adiciona o id do usuário ao objeto para possibilitar o redirecionamento
-              chat.otherUser = { id: otherUserId, ...userDoc.data() };
-            }
+          const otherId = chat.participants.find(id => id !== currentUser.uid);
+          if (otherId) {
+            const userSnap = await getDoc(doc(db, "users", otherId));
+            chat.otherUser = userSnap.exists() ? { id: otherId, ...userSnap.data() } : null;
           }
-
           return chat;
         })
       );
-
-      setChats(chatData);
-      if (!selectedChat && chatData.length > 0) {
-        setSelectedChat(chatData[0]);
-      }
+      setChats(data);
+      const byRoute = data.find(c => c.id === routeChatId);
+      setSelectedChat(byRoute || data[0] || null);
     });
+    return unsub;
+  }, [currentUser, routeChatId]);
 
-    return unsubscribe;
-  }, [currentUser]);
-
-  // Buscar mensagens do chat selecionado
+  // Carrega mensagens
   useEffect(() => {
     if (!selectedChat) return;
-
     const q = query(
       collection(db, "chats", selectedChat.id, "messages"),
       orderBy("createdAt", "asc")
     );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messagesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMessages(messagesData);
+    const unsub = onSnapshot(q, snap => {
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-
-    return unsubscribe;
+    return unsub;
   }, [selectedChat]);
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (newMessage.trim() === "" || !selectedChat) return;
+  // Scroll automático
+  useEffect(() => {
+       // Só scroll quando o stack de mensagens aumentar (envio de nova msg),
+       // e não na seleção de um chat
+       if (prevMessagesLength.current != null && messages.length > prevMessagesLength.current) {
+         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+       }
+       prevMessagesLength.current = messages.length;
+     }, [messages]);
 
+  // Envia mensagem
+  const handleSendMessage = async e => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedChat) return;
+    const chatRef = doc(db, "chats", selectedChat.id);
     try {
       await addDoc(collection(db, "chats", selectedChat.id, "messages"), {
-        text: newMessage,
+        text: newMessage.trim(),
         senderId: currentUser.uid,
         createdAt: serverTimestamp(),
       });
-
+      await updateDoc(chatRef, { lastMessageAt: serverTimestamp() });
       setNewMessage("");
-    } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
+    } catch (err) {
+      console.error("Erro ao enviar mensagem:", err);
     }
   };
 
+  // Seleciona chat e atualiza URL
+  const selectChat = chat => {
+    setSelectedChat(chat);
+    navigate(`/chat/${chat.id}`, { replace: true });
+  };
+
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 60px)" }}>
-      {/* Div de chats - sem alterações */}
-      <div
-        style={{
-          width: "30%",
-          borderRight: "1px solid #ccc",
-          overflowY: "auto",
-        }}
-      >
-        <h3 style={{ padding: "10px" }}>Chats</h3>
-        {chats.map((chat) => (
-          <div
-            key={chat.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "10px",
-              cursor: "pointer",
-              backgroundColor:
-                selectedChat && selectedChat.id === chat.id
-                  ? "#f0f0f0"
-                  : "transparent",
-            }}
-            onClick={() => setSelectedChat(chat)}
-          >
-            {/* Foto do outro usuário */}
-            <img
-              src={chat.otherUser?.photoURL || "/default-avatar.png"}
-              alt="Avatar"
+    <div style={styles.container}>
+      {/* Sidebar */}
+      <div style={styles.sidebar}>
+        <h3 style={styles.sidebarHeader}>Conversas</h3>
+        {chats.map(chat => {
+          const isActive = selectedChat?.id === chat.id;
+          return (
+            <div
+              key={chat.id}
+              onClick={() => selectChat(chat)}
               style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                marginRight: "10px",
-                objectFit: "cover"
+                ...styles.chatItem,
+                backgroundColor: isActive ? "#e6f0ff" : "transparent",
               }}
-            />
-            <div>
-              <strong>
-                {chat.otherUser?.displayName || "Usuário"}
-              </strong>
-              <p style={{ fontSize: "12px", color: "#666" }}>
-                {chat.lastMessage || ""}
-              </p>
+            >
+              <img
+                src={chat.otherUser?.photoURL || "/default-avatar.png"}
+                alt="Avatar"
+                style={styles.avatar}
+              />
+              <div style={styles.chatInfo}>
+                <strong style={styles.chatName}>{chat.otherUser?.displayName || "Usuário"}</strong>
+                <p style={styles.chatSnippet}>{chat.lastMessage || "Sem mensagens"}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Conversa */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Cabeçalho da conversa com foto e nome do usuário */}
+      {/* Painel de Chat */}
+      <div style={styles.chatArea}>
         {selectedChat && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "10px",
-              borderBottom: "1px solid #ccc",
-            }}
-          >
-            <img
-              src={selectedChat.otherUser?.photoURL || "/default-avatar.png"}
-              alt="Avatar"
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                cursor: "pointer",
-                objectFit: "cover"
-              }}
-              onClick={() =>
-                navigate(`/profile/${selectedChat.otherUser?.id}`)
-              }
-            />
-            <h3
-              style={{ marginLeft: "10px", cursor: "pointer" }}
-              onClick={() =>
-                navigate(`/profile/${selectedChat.otherUser?.id}`)
-              }
-            >
-              {selectedChat.otherUser?.displayName || "Usuário"}
-            </h3>
-          </div>
-        )}
-
-        {/* Área de mensagens */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "10px" }}>
-          {messages.map((message) => {
-            const isCurrentUser = message.senderId === currentUser.uid;
-            return (
-              <div
-                key={message.id}
-                style={{
-                  display: "flex",
-                  flexDirection: isCurrentUser ? "row-reverse" : "row",
-                  alignItems: "center",
-                  marginBottom: "10px",
-                }}
+          <>
+            <div style={styles.chatHeader}>
+              <img
+                src={selectedChat.otherUser?.photoURL || "/default-avatar.png"}
+                alt="Avatar"
+                style={styles.avatarLarge}
+                onClick={() => navigate(`/profile/${selectedChat.otherUser.id}`)}
+              />
+              <h3
+                style={styles.chatNameHeader}
+                onClick={() => navigate(`/profile/${selectedChat.otherUser.id}`)}
               >
-                {/* Foto do remetente */}
-                <img
-                  src={
-                    isCurrentUser
-                      ? currentUser.photoURL || "/default-avatar.png"
-                      : selectedChat?.otherUser?.photoURL ||
-                        "/default-avatar.png"
-                  }
-                  alt="Avatar"
-                  style={{
-                    width: "30px",
-                    height: "30px",
-                    borderRadius: "50%",
-                    margin: "0 10px",
-                    objectFit: "cover"
-                  }}
-                />
-
-                {/* Mensagem */}
-                <div
-                  style={{
-                    maxWidth: "60%",
-                    padding: "10px",
-                    borderRadius: "10px",
-                    backgroundColor: isCurrentUser ? "#28a745" : "#f0f0f0",
-                    color: isCurrentUser ? "#fff" : "#000",
-                    textAlign: isCurrentUser ? "right" : "left",
-                  }}
-                >
-                  <p style={{ margin: 0 }}>{message.text}</p>
-                  <small style={{ fontSize: "10px", color: "#000" }}>
-                    {message.createdAt?.toDate
-                      ? message.createdAt.toDate().toLocaleString()
-                      : ""}
-                  </small>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Campo de envio de mensagem */}
-        <form
-          onSubmit={handleSendMessage}
-          style={{
-            display: "flex",
-            padding: "10px",
-            borderTop: "1px solid #ccc",
-          }}
-        >
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Digite sua mensagem..."
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              padding: "10px 15px",
-              marginLeft: "10px",
-              border: "none",
-              backgroundColor: "#28a745",
-              color: "#fff",
-              borderRadius: "5px",
-            }}
-          >
-            Enviar
-          </button>
-        </form>
+                {selectedChat.otherUser?.displayName || "Usuário"}
+              </h3>
+            </div>
+            <div style={styles.messagesWrapper}>
+              {messages.map(msg => {
+                const me = msg.senderId === currentUser.uid;
+                return (
+                  <div
+                    key={msg.id}
+                    style={{
+                      display: "flex",
+                      flexDirection: me ? "row-reverse" : "row",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <img
+                      src={
+                        me
+                          ? (currentUser.photoURL || "/default-avatar.png")
+                          : (selectedChat.otherUser.photoURL || "/default-avatar.png")
+                      }
+                      alt="Avatar"
+                      style={styles.avatarSmall}
+                    />
+                    <div
+                      style={{
+                        ...styles.bubble,
+                        backgroundColor: me ? "#34a853" : "#f1f3f4",
+                        color: me ? "#fff" : "#202124",
+                      }}
+                    >
+                      <p style={{ margin: 0 }}>{msg.text}</p>
+                      <small style={styles.timestamp}>
+                        {msg.createdAt?.toDate
+                          ? msg.createdAt.toDate().toLocaleTimeString()
+                          : ""}
+                      </small>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+            <form style={styles.inputForm} onSubmit={handleSendMessage}>
+              <input
+                type="text"
+                placeholder="Digite sua mensagem..."
+                value={newMessage}
+                onChange={e => setNewMessage(e.target.value)}
+                style={styles.inputBox}
+              />
+              <button type="submit" style={styles.sendButton}>Enviar</button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
 export default ChatPage;
+
+// ===== Estilos =====
+const styles = {
+  container: {
+    display: "flex",
+    height: "calc(100vh - 120px)",
+  },
+  sidebar: {
+    width: "28%",
+    borderRight: "1px solid #ddd",
+    overflowY: "auto",
+    background: "#fff",
+  },
+  sidebarHeader: {
+    padding: "12px",
+    margin: 0,
+    borderBottom: "1px solid #eee",
+    background: "#f9f9f9",
+    fontSize: 18,
+  },
+  chatItem: {
+    display: "flex",
+    alignItems: "center",
+    padding: "10px 12px",
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    marginRight: 12,
+    objectFit: "cover",
+  },
+  chatInfo: { flex: 1 },
+  chatName: { margin: 0, fontSize: 15 },
+  chatSnippet: { margin: 0, fontSize: 12, color: "#555" },
+
+  chatArea: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    background: "#f1f3f4",
+  },
+  chatHeader: {
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 20px",
+    borderBottom: "1px solid #ddd",
+    background: "#fff",
+  },
+  avatarLarge: {
+    width: 38,
+    height: 38,
+    borderRadius: "50%",
+    cursor: "pointer",
+    objectFit: "cover",
+    marginRight: 12,
+  },
+  chatNameHeader: {
+    margin: 0,
+    cursor: "pointer",
+    color: "#1a73e8",
+    fontSize: 18,
+  },
+  messagesWrapper: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "16px 20px",
+    margin: "12px",
+    borderRadius: 12,
+    background: "#ffffff",
+    boxShadow: "inset 0 0 8px rgba(0,0,0,0.04)",
+    maxHeight: "60vh",            // altura reduzida
+  },
+  avatarSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    margin: "0 8px",
+    objectFit: "cover",
+  },
+  bubble: {
+    maxWidth: "65%",
+    padding: "10px 16px",
+    borderRadius: "20px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    transition: "background-color 0.2s",
+    fontSize: 14,
+  },
+  timestamp: {
+    display: "block",
+    marginTop: 6,
+    fontSize: 10,
+    color: "#666",
+    textAlign: "right",
+  },
+  inputForm: {
+    display: "flex",
+    padding: "12px 20px",
+    borderTop: "1px solid #ddd",
+    background: "#fff",
+  },
+  inputBox: {
+    flex: 1,
+    padding: "10px",
+    borderRadius: 6,
+    border: "1px solid #ccc",
+    fontSize: 14,
+  },
+  sendButton: {
+    marginLeft: 10,
+    padding: "10px 16px",
+    border: "none",
+    backgroundColor: "#1a73e8",
+    color: "#fff",
+    fontSize: 14,
+    borderRadius: 6,
+    cursor: "pointer",
+    transition: "background-color 0.2s",
+  },
+};

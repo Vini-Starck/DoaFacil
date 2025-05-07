@@ -1,5 +1,5 @@
 // src/utils/chatUtils.js
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 export const createOrGetChat = async (fromUserId, toUserId) => {
@@ -27,4 +27,36 @@ export const createOrGetChat = async (fromUserId, toUserId) => {
   }
   
   return chat;
+};
+
+export const handleSendMessage = async (currentUser, targetUserId) => {
+  if (!currentUser) return;
+  
+  // Primeiro, verifica se já existe um chat entre os usuários
+  const existingChat = await createOrGetChat(currentUser.uid, targetUserId);
+
+  if (existingChat && existingChat.id) {
+    // Redireciona para o chat existente
+    return `/chat/${existingChat.id}`;
+  } else {
+    // Envia uma notificação de solicitação de chat para o targetUserId
+    try {
+      const notificationId = `${currentUser.uid}-${targetUserId}-${Date.now()}`;
+      const notificationRef = doc(db, "notifications", notificationId);
+      const docSnap = await getDoc(notificationRef);
+      if (!docSnap.exists()) {
+        await setDoc(notificationRef, {
+          type: "chatRequest",
+          from: currentUser.uid,
+          to: targetUserId,
+          timestamp: serverTimestamp(),
+          seen: false
+        });
+      }
+      return "Notificação enviada";
+
+    } catch (error) {
+      console.error("Erro ao enviar notificação de chat:", error);
+    }
+  }
 };

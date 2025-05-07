@@ -94,7 +94,7 @@ function App() {
           <Route path="/profile/:uid" element={<PrivateRoute element={<Profile />} />} />
           <Route path="/add-donation" element={<PrivateRoute element={<AddDonation />} />} />
           <Route path="/my-donations" element={<PrivateRoute element={<MyDonations />} />} />
-          <Route path="/chat" element={<PrivateRoute element={<ChatPage />} />} />
+          <Route path="/chat/:chatId?" element={<PrivateRoute element={<ChatPage />} />} />
           <Route path="/map" element={<PrivateRoute element={<MapPage />} />} />
           <Route path="/notifications" element={<PrivateRoute element={<NotificationsPage />} />} />
           <Route path="/contact/:userId/:donationId" element={<PrivateRoute element={<ContactProfilePage />} />} />
