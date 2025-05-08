@@ -33,6 +33,8 @@ export default function AddDonation() {
   // Referência ao Autocomplete
   const autocompleteRef = useRef(null);
 
+  console.log("GOOGLE_API_KEY em runtime:", process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
+
   // Carrega a API de forma assíncrona
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_API_KEY,
