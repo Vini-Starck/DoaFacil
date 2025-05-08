@@ -5,6 +5,10 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "predeploy": [
+      "npm ci --legacy-peer-deps",
+      "npm run build"
     ]
   }
 }
