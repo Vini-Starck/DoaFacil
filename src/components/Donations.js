@@ -1,14 +1,36 @@
 // src/components/Donations.js
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../AuthContext";
+import { db } from "../config/firebase";
+import { getDocs, collection } from "firebase/firestore";
 
-const Donations = ({ donations, onDonationClick }) => {
+const Donations = ({ onDonationClick }) => {
   const { currentUser } = useAuth();
+  const [donations, setDonations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterNearest, setFilterNearest] = useState(false);
   const [filterType, setFilterType] = useState("");
   const [hoveredId, setHoveredId] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+
+  // Obter a lista de doações do Firestore
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        const donationsCollectionRef = collection(db, "donationItems");
+        const data = await getDocs(donationsCollectionRef);
+        const donationsList = data.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        }));
+        setDonations(donationsList);
+      } catch (error) {
+        console.error("Erro ao buscar doações:", error);
+      }
+    };
+
+    fetchDonations();
+  }, []);
 
   // Obter localização do usuário quando a opção "mais próximas" estiver ativada
   useEffect(() => {
@@ -41,9 +63,7 @@ const Donations = ({ donations, onDonationClick }) => {
     return R * c; // Distância em km
   };
 
-  // Filtrar doações com base nos filtros atuais, além de:
-  // - Exibir apenas doações de outros usuários
-  // - Exibir apenas doações com status "disponível"
+  // Filtrar doações com base nos filtros atuais
   let filteredDonations = donations.filter((donation) => {
     const term = searchTerm.toLowerCase();
     const titleMatch = donation.title.toLowerCase().includes(term);

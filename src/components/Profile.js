@@ -1,29 +1,17 @@
 // src/components/Profile.js
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../AuthContext";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { signOut, updateProfile } from "firebase/auth";
 import { auth, storage, db } from "../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {
-  doc,
-  updateDoc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { deleteUserAndDonations } from "../utils/userUtils";
-import { handleSendMessage } from "../utils/chatUtils";
 
 const Profile = () => {
   const { uid } = useParams();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-
   const isOwnProfile = currentUser && uid === currentUser.uid;
 
   const [userData, setUserData] = useState(null);
@@ -31,10 +19,9 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [photoURL, setPhotoURL] = useState("");
-
   const fileInputRef = useRef(null);
 
-  // Fetch profile data including rating
+  // Carrega dados do perfil e avaliação
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -45,7 +32,6 @@ const Profile = () => {
             email: currentUser.email,
             photoURL: currentUser.photoURL,
           };
-          // fetch rating from users collection
           const snap = await getDoc(doc(db, "users", currentUser.uid));
           setRating(snap.exists() ? snap.data().rating || null : null);
         } else {
@@ -63,6 +49,7 @@ const Profile = () => {
     fetchData();
   }, [uid, isOwnProfile, currentUser]);
 
+  // Sincroniza campos de edição
   useEffect(() => {
     if (userData) {
       setDisplayName(userData.displayName || "");
@@ -117,40 +104,13 @@ const Profile = () => {
     }
   };
 
-  const handleContact = async () => {
-    if (!currentUser) return;
-    const chatsRef = collection(db, "chats");
-    const q = query(
-      chatsRef,
-      where("participants", "array-contains", currentUser.uid)
-    );
-    const snaps = await getDocs(q);
-    const existing = snaps.docs.find(d => d.data().participants.includes(uid));
-    if (existing) {
-      navigate(`/chat/${existing.id}`);
-    } else {
-      await addDoc(collection(db, "notifications"), {
-        fromUser: currentUser.uid,
-        fromUserName: currentUser.displayName || currentUser.email,
-        toUser: uid,
-        fromUserPhoto: currentUser.photoURL || null,
-        fromUserRating: rating,
-        message: `Olá, gostaria de conversar com você!`,
-        type: "chatRequest",
-        status: "pending",
-        createdAt: serverTimestamp(),
-      });
-      alert("Solicitação enviada.");
-    }
-  };
-
   return (
     <div style={styles.card}>
       {userData ? (
         <>
-          <div onClick={onPhotoClick} style={{ position: 'relative' }}>
+          <div onClick={onPhotoClick} style={{ position: "relative" }}>
             <img
-              src={photoURL || '/icons/default-profile.png'}
+              src={photoURL || "/icons/default-profile.png"}
               alt="Perfil"
               style={styles.avatar}
             />
@@ -158,16 +118,17 @@ const Profile = () => {
               <input
                 type="file"
                 ref={fileInputRef}
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 onChange={onPhotoChange}
                 accept="image/*"
               />
             )}
           </div>
+
           <h2 style={styles.name}>{userData.displayName || userData.email}</h2>
           <p style={styles.email}>{userData.email}</p>
           <p style={styles.rating}>
-            {rating != null ? `Avaliação: ${rating.toFixed(1)}` : 'Sem avaliação'}
+            {rating != null ? `Avaliação: ${rating.toFixed(1)}` : "Sem avaliação"}
           </p>
 
           {isOwnProfile ? (
@@ -176,39 +137,38 @@ const Profile = () => {
                 <>
                   <input
                     value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
+                    onChange={(e) => setDisplayName(e.target.value)}
                     style={styles.input}
                     maxLength={50}
                   />
-                  <button onClick={saveProfile} style={{...styles.btn, ...styles.primary}}>
+                  <button onClick={saveProfile} style={{ ...styles.btn, ...styles.primary }}>
                     Salvar
                   </button>
                 </>
               ) : (
                 <button
                   onClick={() => setEditing(true)}
-                  style={{...styles.btn, ...styles.secondary}}
+                  style={{ ...styles.btn, ...styles.secondary }}
                 >
                   Editar Nome
                 </button>
               )}
-              <button onClick={() => navigate('/my-donations')} style={styles.btn}>
+              <button onClick={() => navigate("/my-donations")} style={styles.btn}>
                 Minhas Doações
               </button>
-              <button onClick={() => navigate('/chat')} style={{...styles.btn, ...styles.primary}}>
+              <button onClick={() => navigate("/chat")} style={{ ...styles.btn, ...styles.primary }}>
                 Chats
               </button>
-              <button onClick={handleLogout} style={{...styles.btn, ...styles.danger}}>
+              <button onClick={handleLogout} style={{ ...styles.btn, ...styles.danger }}>
                 Sair
               </button>
-              <button onClick={handleDeleteAccount} style={{...styles.btn, ...styles.danger}}>
+              <button onClick={handleDeleteAccount} style={{ ...styles.btn, ...styles.danger }}>
                 Excluir Conta
               </button>
             </div>
           ) : (
-            <button onClick={handleContact} style={{...styles.btn, ...styles.primary}}>
-              Enviar Mensagem
-            </button>
+            // Removido o botão de mensagem quando não for próprio perfil
+            null
           )}
         </>
       ) : (
@@ -221,39 +181,39 @@ const Profile = () => {
 const styles = {
   card: {
     maxWidth: 400,
-    margin: '40px auto',
+    margin: "40px auto",
     padding: 20,
-    background: '#fff',
+    background: "#fff",
     borderRadius: 10,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    textAlign: 'center',
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    textAlign: "center",
   },
   avatar: {
     width: 120,
     height: 120,
-    borderRadius: '50%',
-    objectFit: 'cover',
+    borderRadius: "50%",
+    objectFit: "cover",
     marginBottom: 16,
-    cursor: 'pointer',
+    cursor: "pointer",
   },
   name: {
-    margin: '0 0 8px',
+    margin: "0 0 8px",
     fontSize: 24,
-    color: '#333',
+    color: "#333",
   },
   email: {
-    margin: '0 0 8px',
-    color: '#666',
+    margin: "0 0 8px",
+    color: "#666",
     fontSize: 14,
   },
   rating: {
-    margin: '0 0 16px',
-    color: '#444',
+    margin: "0 0 16px",
+    color: "#444",
     fontSize: 16,
   },
   actions: {
-    display: 'flex',
-    flexDirection: 'column',
+    display: "flex",
+    flexDirection: "column",
     gap: 10,
     marginTop: 16,
   },
@@ -261,22 +221,22 @@ const styles = {
     padding: 8,
     fontSize: 16,
     borderRadius: 6,
-    border: '1px solid #ccc',
-    width: '70%',
-    margin: '0 auto',
+    border: "1px solid #ccc",
+    width: "70%",
+    margin: "0 auto",
   },
   btn: {
-    padding: '10px 16px',
-    border: 'none',
+    padding: "10px 16px",
+    border: "none",
     borderRadius: 6,
-    cursor: 'pointer',
-    transition: 'opacity 0.2s',
-    backgroundColor: '#6c757d',
-    color: '#fff',
+    cursor: "pointer",
+    transition: "opacity 0.2s",
+    backgroundColor: "#6c757d",
+    color: "#fff",
   },
-  primary: { backgroundColor: '#007bff' },
-  secondary: { backgroundColor: '#28a745' },
-  danger: { backgroundColor: '#dc3545' },
+  primary: { backgroundColor: "#007bff" },
+  secondary: { backgroundColor: "#28a745" },
+  danger: { backgroundColor: "#dc3545" },
 };
 
 export default Profile;
