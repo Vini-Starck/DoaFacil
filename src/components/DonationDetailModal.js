@@ -1,8 +1,5 @@
 // src/components/DonationDetailModal.js
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -10,19 +7,13 @@ import {
   addDoc,
   collection,
   serverTimestamp,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
 
-// — Fix Leaflet’s missing-default-icon problem in CRA —
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
-  iconUrl: require("leaflet/dist/images/marker-icon.png"),
-  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-});
-
-// Utility: compute relative time
 const getRelativeTime = (date) => {
   const now = new Date();
   const diff = now - date;
@@ -39,13 +30,13 @@ export default function DonationDetailModal({ donation, onClose }) {
   const { currentUser } = useAuth();
   const [creator, setCreator] = useState(null);
   const [creatorRating, setCreatorRating] = useState(null);
+  const [requested, setRequested] = useState(false);
 
-  // Load creator info + rating
+  // Carrega dados do criador
   useEffect(() => {
     async function fetchCreator() {
       try {
-        const refUser = doc(db, "users", donation.userId);
-        const snap = await getDoc(refUser);
+        const snap = await getDoc(doc(db, "users", donation.userId));
         if (snap.exists()) {
           const data = snap.data();
           setCreator(data);
@@ -58,10 +49,51 @@ export default function DonationDetailModal({ donation, onClose }) {
     fetchCreator();
   }, [donation.userId]);
 
-  // Send request notification
+  // Verifica se já existe solicitação para esta doação
+  useEffect(() => {
+    if (!currentUser) return;
+    async function checkRequested() {
+      try {
+        const notifQuery = query(
+          collection(db, "notifications"),
+          where("type", "==", "requestDonation"),
+          where("fromUser", "==", currentUser.uid),
+          where("donationId", "==", donation.id)
+        );
+        const snap = await getDocs(notifQuery);
+        if (!snap.empty) {
+          setRequested(true);
+        }
+      } catch (err) {
+        console.error("Erro ao verificar solicitação:", err);
+      }
+    }
+    checkRequested();
+  }, [currentUser, donation.id]);
+
+  // Envia notificação de solicitação
   const handleRequest = async () => {
     if (!currentUser) return onClose();
+    if (currentUser.uid === donation.userId) {
+      alert("Você é o criador desta doação.");
+      return;
+    }
     try {
+      // evita chats duplicados
+      const q = query(
+        collection(db, "chats"),
+        where("participants", "array-contains", currentUser.uid)
+      );
+      const snap = await getDocs(q);
+      const exists = snap.docs.some((d) =>
+        d.data().participants.includes(donation.userId)
+      );
+      if (exists) {
+        alert("Você já tem um chat com este usuário.");
+        return;
+      }
+
+      // cria notificação
       await addDoc(collection(db, "notifications"), {
         fromUser: currentUser.uid,
         fromUserName: currentUser.displayName || currentUser.email,
@@ -76,131 +108,120 @@ export default function DonationDetailModal({ donation, onClose }) {
         status: "pending",
         createdAt: serverTimestamp(),
       });
+
       alert("Solicitação enviada!");
-      onClose();
+      setRequested(true);
     } catch (err) {
       console.error("Erro ao solicitar doação:", err);
       alert("Não foi possível enviar solicitação.");
     }
   };
 
-  const darkLayer =
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-
   return (
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.card} onClick={(e) => e.stopPropagation()}>
         <header style={styles.header}>
-          <h1 style={styles.title}>{donation.title}</h1>
-          <button style={styles.closeBtn} onClick={onClose}>
-            ×
-          </button>
+          <h2 style={styles.title}>{donation.title}</h2>
+          <button style={styles.closeBtn} onClick={onClose}>×</button>
         </header>
 
-        <section style={styles.main}>
-          <div style={styles.imageContainer}>
-            {donation.imageUrl ? (
-              <img
-                src={`https://firebasestorage.googleapis.com/v0/b/doafacil-ab7e4.firebasestorage.app/o/${encodeURIComponent(
-                  donation.imageUrl
-                )}?alt=media`}
-                alt="Doação"
-                style={styles.image}
-              />
-            ) : (
-              <div style={styles.placeholder}>Sem imagem</div>
-            )}
-            <div style={styles.badges}>
-              <span style={{ ...styles.badge, ...styles.statusBadge }}>
-                {donation.status}
-              </span>
-              <span style={{ ...styles.badge, ...styles.typeBadge }}>
-                {donation.donationType}
-              </span>
-            </div>
+        <div style={styles.imageWrapper}>
+          {donation.imageUrl ? (
+            <img
+              src={donation.imageUrl}
+              alt="Doação"
+              style={styles.image}
+              onError={(e) => {
+                e.currentTarget.src =
+                  "https://cdn-icons-png.flaticon.com/512/684/684908.png";
+              }}
+            />
+          ) : (
+            <div style={styles.placeholder}>Sem imagem</div>
+          )}
+          <div style={styles.badges}>
+            <span style={{ ...styles.badge, ...styles.statusBadge }}>
+              {donation.status}
+            </span>
+            <span style={{ ...styles.badge, ...styles.typeBadge }}>
+              {donation.donationType}
+            </span>
           </div>
-          <div style={styles.details}>
-            <p style={styles.description}>{donation.description}</p>
-            {/* Location (render once, not in the extras loop) */}
-            {donation.location && (
-              <div style={styles.row}>
-                <strong style={styles.rowLabel}>Localização:</strong> {donation.location}
-              </div>
-            )}
+        </div>
 
-            {/* Any other custom fields (excluding userId & location) */}
-            {Object.entries(donation)
-              .filter(
-                ([k]) =>
-                  ![
-                    "id",
-                    "title",
-                    "description",
-                    "imageUrl",
-                    "latitude",
-                    "longitude",
-                    "createdAt",
-                    "status",
-                    "donationType",
-                    "userId",       // ✱ exclude the raw userId
-                    "location",     // ✱ exclude location here
-                  ].includes(k)
-              )
-              .map(([k, v]) => (
-                <div key={k} style={styles.row}>
-                 <strong style={styles.rowLabel}>{k}:</strong> {v}
-               </div>
-             ))}
-            {donation.createdAt?.toDate && (
-              <p style={styles.timestamp}>
-                Criada {getRelativeTime(donation.createdAt.toDate())}
+        <div style={styles.content}>
+          <p style={styles.description}>{donation.description}</p>
+
+          {donation.location && (
+            <p style={styles.field}>
+              <strong>Localização:</strong> {donation.location}
+            </p>
+          )}
+
+          {Object.entries(donation)
+            .filter(
+              ([k]) =>
+                ![
+                  "id",
+                  "title",
+                  "description",
+                  "imageUrl",
+                  "latitude",
+                  "longitude",
+                  "createdAt",
+                  "status",
+                  "donationType",
+                  "userId",
+                  "location",
+                ].includes(k)
+            )
+            .map(([k, v]) => (
+              <p key={k} style={styles.field}>
+                <strong>{k}:</strong> {String(v)}
               </p>
-            )}
-          </div>
-        </section>
+            ))}
 
-        {donation.latitude && donation.longitude && (
-          <div style={styles.mapWrapper}>
-            <MapContainer
-              center={[donation.latitude, donation.longitude]}
-              zoom={15}
-              style={styles.map}
-            >
-              <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url={darkLayer}
-              />
-              <Marker position={[donation.latitude, donation.longitude]} />
-            </MapContainer>
-          </div>
-        )}
+          {donation.createdAt?.toDate && (
+            <p style={styles.timestamp}>
+              Criada {getRelativeTime(donation.createdAt.toDate())}
+            </p>
+          )}
+        </div>
 
         {creator && (
-          <footer style={styles.creatorSection}>
+          <div style={styles.creator}>
             <img
               src={creator.photoURL || "/icons/default-profile.png"}
               alt="Criador"
-              style={styles.creatorAvatar}
+              style={styles.avatar}
               onClick={() => navigate(`/profile/${donation.userId}`)}
             />
             <div>
-              <h3
+              <p
                 style={styles.creatorName}
                 onClick={() => navigate(`/profile/${donation.userId}`)}
               >
                 {creator.displayName || creator.email}
-              </h3>
+              </p>
               <p style={styles.creatorRating}>
                 {creatorRating != null
                   ? `Avaliação: ${creatorRating}`
                   : "Sem avaliação"}
               </p>
             </div>
-          </footer>
+          </div>
         )}
 
-        <button style={styles.actionBtn} onClick={handleRequest}>
-          Quero esta doação
+        <button
+          style={{
+            ...styles.button,
+            backgroundColor: requested ? "#6c757d" : "#28a745",
+            cursor: requested ? "not-allowed" : "pointer",
+          }}
+          onClick={handleRequest}
+          disabled={requested}
+        >
+          {requested ? "Solicitação enviada" : "Quero esta doação"}
         </button>
       </div>
     </div>
@@ -210,11 +231,8 @@ export default function DonationDetailModal({ donation, onClose }) {
 const styles = {
   overlay: {
     position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    inset: 0,
+    backgroundColor: "rgba(0,0,0,0.7)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -222,44 +240,34 @@ const styles = {
   },
   card: {
     background: "#fff",
-    borderRadius: 10,
+    borderRadius: 8,
     width: "90%",
-    maxWidth: 600,
+    maxWidth: 500,
     maxHeight: "90%",
     overflowY: "auto",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-    position: "relative",
     padding: 20,
-    display: "flex",
-    flexDirection: "column",
+    position: "relative",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottom: "1px solid #eee",
-    paddingBottom: 10,
+    marginBottom: 10,
   },
-  title: { margin: 0, fontSize: 24, color: "#333" },
+  title: { margin: 0, fontSize: 20, color: "#333" },
   closeBtn: {
-    fontSize: 24,
     background: "none",
     border: "none",
+    fontSize: 24,
     cursor: "pointer",
     color: "#888",
   },
-  main: { display: "flex", gap: 20, marginTop: 15 },
-  imageContainer: { flex: 1, position: "relative" },
-  image: {
-    width: "100%",
-    borderRadius: 8,
-    objectFit: "cover",
-    maxHeight: 250,
-  },
+  imageWrapper: { position: "relative", textAlign: "center", marginBottom: 15 },
+  image: { width: "100%", borderRadius: 8, maxHeight: 250, objectFit: "cover" },
   placeholder: {
     width: "100%",
     height: 250,
-    backgroundColor: "#f0f0f0",
+    background: "#f0f0f0",
     borderRadius: 8,
     display: "flex",
     alignItems: "center",
@@ -280,45 +288,38 @@ const styles = {
     fontSize: 12,
     color: "#fff",
   },
-  statusBadge: { backgroundColor: "#dc3545" },
+  statusBadge: { backgroundColor: "#168723" },
   typeBadge: { backgroundColor: "#007bff" },
-  details: { flex: 2 },
-  description: { color: "#555", marginBottom: 10, lineHeight: 1.5 },
-  row: { marginBottom: 6 },
-  rowLabel: { fontWeight: "bold", color: "#444" },
+  content: { marginBottom: 20 },
+  description: { color: "#555", lineHeight: 1.4, marginBottom: 10 },
+  field: { marginBottom: 6, color: "#444" },
   timestamp: { fontSize: 12, color: "#999", marginTop: 10 },
-  mapWrapper: { marginTop: 20, borderRadius: 8, overflow: "hidden" },
-  map: { height: 200, width: "100%" },
-  creatorSection: {
+  creator: {
     display: "flex",
     alignItems: "center",
-    gap: 15,
-    borderTop: "1px solid #eee",
-    marginTop: 20,
-    paddingTop: 15,
+    gap: 12,
+    marginBottom: 20,
   },
-  creatorAvatar: {
+  avatar: {
     width: 50,
     height: 50,
     borderRadius: "50%",
-    cursor: "pointer",
     objectFit: "cover",
+    cursor: "pointer",
   },
   creatorName: {
     margin: 0,
-    fontSize: 18,
+    fontWeight: "bold",
     color: "#007bff",
     cursor: "pointer",
   },
-  creatorRating: { fontSize: 14, color: "#666", margin: 0 },
-  actionBtn: {
-    marginTop: 20,
+  creatorRating: { margin: 0, color: "#666", fontSize: 14 },
+  button: {
+    width: "100%",
     padding: "12px 0",
-    backgroundColor: "#28a745",
-    color: "#fff",
     fontSize: 16,
     border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
+    borderRadius: 5,
+    color: "#fff",
   },
 };

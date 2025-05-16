@@ -11,14 +11,53 @@ import {
   addDoc,
   getDoc,
   serverTimestamp,
+  runTransaction
 } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
 
+
+function RatingModal({ visible, onClose, onSubmit, targetUser }) {
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState("");
+  if (!visible) return null;
+  return (
+    <div style={modalStyles.overlay} onClick={onClose}>
+      <div style={modalStyles.modal} onClick={e => e.stopPropagation()}>
+        <h3>Avalie {targetUser.displayName || targetUser.email}</h3>
+        <div style={modalStyles.stars}>
+          {[1,2,3,4,5].map(n => (
+            <span key={n}
+              style={{ fontSize: 30, cursor: 'pointer', color: n <= stars ? '#ffc107' : '#ddd' }}
+              onClick={() => setStars(n)}>
+              ★
+            </span>
+          ))}
+        </div>
+        <textarea
+          placeholder="Comentário (opcional)"
+          rows={3}
+          style={modalStyles.textarea}
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+        />
+        <button
+          onClick={() => onSubmit(stars, comment)}
+          style={modalStyles.submitBtn}
+          disabled={stars === 0}
+        >Enviar</button>
+      </div>
+    </div>
+  );
+}
+
 const NotificationsPage = () => {
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalNotif, setModalNotif] = useState(null);
+  const [targetUser, setTargetUser] = useState(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -41,12 +80,25 @@ const NotificationsPage = () => {
         status: "accepted",
         type: "donationAccepted",
       });
-      // atualiza doação
+  
+      // atualiza item de doação
       await updateDoc(doc(db, "donationItems", notif.donationId), {
         status: "em andamento",
         beneficiary: notif.fromUser,
       });
-      // notifica solicitante
+  
+      // cria um novo chat entre doador e solicitante
+      const chatDoc = await addDoc(collection(db, "chats"), {
+        users: [currentUser.uid, notif.fromUser],
+        donationId: notif.donationId,
+        donationTitle: notif.donationTitle,
+        createdAt: serverTimestamp(),
+        messages: [],
+      });
+  
+      const chatId = chatDoc.id;
+  
+      // notifica o solicitante que foi aceito e que o chat está disponível
       await addDoc(collection(db, "notifications"), {
         fromUser: currentUser.uid,
         fromUserName: currentUser.displayName || currentUser.email,
@@ -54,16 +106,19 @@ const NotificationsPage = () => {
         type: "requestAccepted",
         donationId: notif.donationId,
         donationTitle: notif.donationTitle,
-        message: `Sua solicitação para "${notif.donationTitle}" foi aceita! Confira em Minhas Doações.`,
+        chatId: chatId, // 🔥 referencia o chat criado
+        message: `Sua solicitação para "${notif.donationTitle}" foi aceita! Você pode conversar com o doador agora.`,
         status: "unread",
         createdAt: serverTimestamp(),
       });
-      alert("Solicitação aceita com sucesso!");
+  
+      alert("Solicitação aceita com sucesso e chat criado!");
     } catch (err) {
       console.error("Erro ao aceitar solicitação de doação:", err);
       alert("Erro ao aceitar: " + err.message);
     }
   };
+  
 
   // Recusa requestDonation
   const handleDeclineDonationRequest = async notif => {
@@ -98,6 +153,53 @@ const NotificationsPage = () => {
     }
   };
 
+  const openEvaluate = async notif => {
+      // pega dados do usuário a ser avaliado
+      const userSnap = await getDoc(doc(db, "users", notif.fromUser));
+      if (userSnap.exists()) setTargetUser({ id: notif.fromUser, ...userSnap.data() });
+      setModalNotif(notif);
+      setModalVisible(true);
+    };
+
+  const handleSubmitRating = async (stars, comment) => {
+  const notif = modalNotif;
+  if (!notif) return;
+  const targetRef = doc(db, "users", notif.fromUser);
+  const notifRef = doc(db, "notifications", notif.id);
+
+  try {
+    await runTransaction(db, async tx => {
+      const userDoc = await tx.get(targetRef);
+      if (!userDoc.exists()) throw new Error("Usuário não encontrado");
+      const data = userDoc.data();
+      const prevRating = data.rating ?? 0;
+      const prevCount = data.ratingCount ?? 0;
+      const newCount = prevCount + 1;
+      const newRating = (prevRating * prevCount + stars) / newCount;
+      tx.update(targetRef, { rating: newRating, ratingCount: newCount });
+      // atualiza notificação como avaliada
+      tx.update(notifRef, { status: "evaluated" });
+    });
+
+    // Cria documento na coleção "avaliations"
+    await addDoc(collection(db, "avaliations"), {
+      fromUser: currentUser.uid,
+      toUser: notif.fromUser,
+      donationId: notif.donationId,
+      stars,
+      comment: comment || "",
+      createdAt: serverTimestamp(),
+    });
+
+    alert("Avaliação enviada!");
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao enviar avaliação: " + err.message);
+  } finally {
+    setModalVisible(false);
+  }
+};
+
   return (
     <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
       <h2 style={{ textAlign: "center", marginBottom: 20 }}>Notificações</h2>
@@ -111,13 +213,20 @@ const NotificationsPage = () => {
           onAcceptDonation={handleAcceptDonationRequest}
           onDeclineDonation={handleDeclineDonationRequest}
           onOk={handleOk}
+          onOpenEvaluate={openEvaluate}
         />
       ))}
+      <RatingModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleSubmitRating}
+        targetUser={targetUser}
+      />
     </div>
   );
 };
 
-function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk }) {
+function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk, onOpenEvaluate }) {
   const [donationImg, setDonationImg] = useState(null);
 
   // busca a imagem da doação
@@ -234,25 +343,37 @@ function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk }) 
       <div style={cardStyle}>
         <p>
           <strong>{notif.fromUserName}</strong> aceitou sua solicitação para{" "}
-          <strong>{notif.donationTitle}</strong>. Veja em{" "}
-          <Link to="/my-donations">Minhas Doações</Link>.
+          <strong>{notif.donationTitle}</strong>. Agora vocês podem conversar!
         </p>
-        {notif.status !== "seen" && (
-          <button
-            onClick={() => onOk(notif.id)}
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          <Link
+            to={`/chat/${notif.chatId}`} // 🔥 link para a página de chat
             style={{
-              marginTop: 10,
               padding: "8px 12px",
-              backgroundColor: "#007bff",
+              backgroundColor: "#28a745",
               color: "#fff",
-              border: "none",
               borderRadius: 5,
-              cursor: "pointer",
+              textDecoration: "none",
             }}
           >
-            OK
-          </button>
-        )}
+            Ir para o chat
+          </Link>
+          {notif.status !== "seen" && (
+            <button
+              onClick={() => onOk(notif.id)}
+              style={{
+                padding: "8px 12px",
+                backgroundColor: "#007bff",
+                color: "#fff",
+                border: "none",
+                borderRadius: 5,
+                cursor: "pointer",
+              }}
+            >
+              OK
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -265,6 +386,20 @@ function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk }) 
           Você aceitou a solicitação de <strong>{notif.fromUserName}</strong> para{" "}
           <strong>{notif.donationTitle}</strong>.
         </p>
+      </div>
+    );
+  }
+
+  if (notif.type === "chatClosedEvaluate") {
+    return (
+      <div style={cardStyle}>
+        <p>{notif.message}</p>
+        {notif.status === "pending" && (
+          <button
+            onClick={() => onOpenEvaluate(notif)}
+            style={{ padding: "8px 12px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer" }}
+          >Avaliar Usuário</button>
+        )}
       </div>
     );
   }
@@ -287,5 +422,13 @@ function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk }) 
 
   return null;
 }
+
+const modalStyles = {
+  overlay: { position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 },
+  modal: { background: "#fff", padding: 20, borderRadius: 8, width: 300, textAlign: "center" },
+  stars: { margin: "10px 0" },
+  textarea: { width: "100%", height: 60, marginBottom: 10, padding: 8, borderRadius: 4, border: "1px solid #ccc" },
+  submitBtn: { padding: "8px 16px", backgroundColor: "#28a745", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer" }
+};
 
 export default NotificationsPage;

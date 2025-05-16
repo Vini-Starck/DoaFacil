@@ -42,10 +42,14 @@ const Header = () => {
 
   return (
     <header style={styles.header}>
-      <Link to="/" style={styles.logo}>
-        DoaFácil
-      </Link>
-
+    <Link to="/" style={styles.logo}>
+      <img
+        src={require("../icons/logo.png")}
+        alt="DoaFácil Logo"
+        style={styles.logoImage || { width: 60, height: 60, marginRight: 10, verticalAlign: "middle" }}
+      />
+      <span style={{ marginLeft: 8, verticalAlign: "middle" }}>DoaFácil</span>
+    </Link>
       <nav>
         <ul style={styles.navList}>
           {[

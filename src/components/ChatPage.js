@@ -20,71 +20,82 @@ const ChatPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const { chatId: routeChatId } = useParams();
-  
+
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
-  const prevMessagesLength = useRef(null);
+  const prevMessagesLength = useRef(0);
 
-  // Protege rota
+  // redireciona se não logado
   useEffect(() => {
-    if (!currentUser) navigate("/");
+    if (!currentUser) navigate("/login");
   }, [currentUser, navigate]);
 
-  // Carrega chats ordenados por última mensagem
+  // busca lista de chats — só aqueles com closed !== true
   useEffect(() => {
-    if (!currentUser) return;
-    const q = query(
-      collection(db, "chats"),
-      where("participants", "array-contains", currentUser.uid),
-      orderBy("lastMessageAt", "desc")
-    );
-    const unsub = onSnapshot(q, async snap => {
-      const data = await Promise.all(
-        snap.docs.map(async docSnap => {
-          const chat = { id: docSnap.id, ...docSnap.data() };
-          const otherId = chat.participants.find(id => id !== currentUser.uid);
+  if (!currentUser) return;
+  const q = query(
+    collection(db, "chats"),
+    where("users", "array-contains", currentUser.uid),
+    orderBy("createdAt", "desc")
+  );
+  const unsub = onSnapshot(q, async (snap) => {
+    const loaded = await Promise.all(
+      snap.docs
+        .filter(
+          (d) => d.data().closed === false || d.data().closed === undefined
+        )
+        .map(async (d) => {
+          const data = d.data();
+          const otherId = data.users.find((id) => id !== currentUser.uid);
+          let otherUser = null;
           if (otherId) {
             const userSnap = await getDoc(doc(db, "users", otherId));
-            chat.otherUser = userSnap.exists() ? { id: otherId, ...userSnap.data() } : null;
+            if (userSnap.exists())
+              otherUser = { id: otherId, ...userSnap.data() };
           }
-          return chat;
+          return {
+            id: d.id,
+            donationTitle: data.donationTitle,
+            users: data.users,
+            otherUser,
+            lastMessageAt: data.lastMessageAt,
+          };
         })
-      );
-      setChats(data);
-      const byRoute = data.find(c => c.id === routeChatId);
-      setSelectedChat(byRoute || data[0] || null);
-    });
-    return unsub;
-  }, [currentUser, routeChatId]);
+    );
+    setChats(loaded);
+    const byRoute = loaded.find((c) => c.id === routeChatId);
+    setSelectedChat(byRoute || loaded[0] || null);
+  });
+  return unsub;
+}, [currentUser, routeChatId]);
 
-  // Carrega mensagens
+  // carrega mensagens do chat selecionado
   useEffect(() => {
     if (!selectedChat) return;
     const q = query(
       collection(db, "chats", selectedChat.id, "messages"),
       orderBy("createdAt", "asc")
     );
-    const unsub = onSnapshot(q, snap => {
-      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const unsub = onSnapshot(q, (snap) => {
+      const msgs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setMessages(msgs);
     });
     return unsub;
   }, [selectedChat]);
 
-  // Scroll automático
+  // scroll automático só quando chega nova mensagem
   useEffect(() => {
-       // Só scroll quando o stack de mensagens aumentar (envio de nova msg),
-       // e não na seleção de um chat
-       if (prevMessagesLength.current != null && messages.length > prevMessagesLength.current) {
-         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-       }
-       prevMessagesLength.current = messages.length;
-     }, [messages]);
+    if (messages.length > prevMessagesLength.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages]);
 
-  // Envia mensagem
-  const handleSendMessage = async e => {
+  // envio de mensagem
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat) return;
     const chatRef = doc(db, "chats", selectedChat.id);
@@ -101,8 +112,8 @@ const ChatPage = () => {
     }
   };
 
-  // Seleciona chat e atualiza URL
-  const selectChat = chat => {
+  // muda chat ativo e atualiza URL
+  const selectChat = (chat) => {
     setSelectedChat(chat);
     navigate(`/chat/${chat.id}`, { replace: true });
   };
@@ -112,7 +123,7 @@ const ChatPage = () => {
       {/* Sidebar */}
       <div style={styles.sidebar}>
         <h3 style={styles.sidebarHeader}>Conversas</h3>
-        {chats.map(chat => {
+        {chats.map((chat) => {
           const isActive = selectedChat?.id === chat.id;
           return (
             <div
@@ -129,8 +140,12 @@ const ChatPage = () => {
                 style={styles.avatar}
               />
               <div style={styles.chatInfo}>
-                <strong style={styles.chatName}>{chat.otherUser?.displayName || "Usuário"}</strong>
-                <p style={styles.chatSnippet}>{chat.lastMessage || "Sem mensagens"}</p>
+                <strong style={styles.chatName}>
+                  {chat.otherUser?.displayName || "Usuário"}
+                </strong>
+                <div style={styles.chatSub}>
+                  sobre: <em>{chat.donationTitle}</em>
+                </div>
               </div>
             </div>
           );
@@ -139,24 +154,34 @@ const ChatPage = () => {
 
       {/* Painel de Chat */}
       <div style={styles.chatArea}>
-        {selectedChat && (
+        {selectedChat ? (
           <>
             <div style={styles.chatHeader}>
               <img
                 src={selectedChat.otherUser?.photoURL || "/default-avatar.png"}
                 alt="Avatar"
                 style={styles.avatarLarge}
-                onClick={() => navigate(`/profile/${selectedChat.otherUser.id}`)}
+                onClick={() =>
+                  navigate(`/profile/${selectedChat.otherUser.id}`)
+                }
               />
-              <h3
-                style={styles.chatNameHeader}
-                onClick={() => navigate(`/profile/${selectedChat.otherUser.id}`)}
-              >
-                {selectedChat.otherUser?.displayName || "Usuário"}
-              </h3>
+              <div>
+                <h3
+                  style={styles.chatNameHeader}
+                  onClick={() =>
+                    navigate(`/profile/${selectedChat.otherUser.id}`)
+                  }
+                >
+                  {selectedChat.otherUser?.displayName || "Usuário"}
+                </h3>
+                <p style={styles.chatItemHeader}>
+                  Conversa sobre: <strong>{selectedChat.donationTitle}</strong>
+                </p>
+              </div>
             </div>
+
             <div style={styles.messagesWrapper}>
-              {messages.map(msg => {
+              {messages.map((msg) => {
                 const me = msg.senderId === currentUser.uid;
                 return (
                   <div
@@ -164,14 +189,16 @@ const ChatPage = () => {
                     style={{
                       display: "flex",
                       flexDirection: me ? "row-reverse" : "row",
+                      alignItems: "flex-end",
                       marginBottom: 12,
                     }}
                   >
                     <img
                       src={
                         me
-                          ? (currentUser.photoURL || "/default-avatar.png")
-                          : (selectedChat.otherUser.photoURL || "/default-avatar.png")
+                          ? currentUser.photoURL || "/default-avatar.png"
+                          : selectedChat.otherUser.photoURL ||
+                            "/default-avatar.png"
                       }
                       alt="Avatar"
                       style={styles.avatarSmall}
@@ -195,17 +222,24 @@ const ChatPage = () => {
               })}
               <div ref={messagesEndRef} />
             </div>
+
             <form style={styles.inputForm} onSubmit={handleSendMessage}>
               <input
                 type="text"
                 placeholder="Digite sua mensagem..."
                 value={newMessage}
-                onChange={e => setNewMessage(e.target.value)}
+                onChange={(e) => setNewMessage(e.target.value)}
                 style={styles.inputBox}
               />
-              <button type="submit" style={styles.sendButton}>Enviar</button>
+              <button type="submit" style={styles.sendButton}>
+                Enviar
+              </button>
             </form>
           </>
+        ) : (
+          <div style={styles.emptyState}>
+            Selecione uma conversa à esquerda.
+          </div>
         )}
       </div>
     </div>
@@ -249,7 +283,7 @@ const styles = {
   },
   chatInfo: { flex: 1 },
   chatName: { margin: 0, fontSize: 15 },
-  chatSnippet: { margin: 0, fontSize: 12, color: "#555" },
+  chatSub: { fontSize: 12, color: "#666" },
 
   chatArea: {
     flex: 1,
@@ -263,6 +297,7 @@ const styles = {
     padding: "12px 20px",
     borderBottom: "1px solid #ddd",
     background: "#fff",
+    gap: 12,
   },
   avatarLarge: {
     width: 38,
@@ -270,13 +305,17 @@ const styles = {
     borderRadius: "50%",
     cursor: "pointer",
     objectFit: "cover",
-    marginRight: 12,
   },
   chatNameHeader: {
     margin: 0,
-    cursor: "pointer",
-    color: "#1a73e8",
     fontSize: 18,
+    color: "#1a73e8",
+    cursor: "pointer",
+  },
+  chatItemHeader: {
+    margin: "4px 0 0",
+    fontSize: 14,
+    color: "#555",
   },
   messagesWrapper: {
     flex: 1,
@@ -286,7 +325,7 @@ const styles = {
     borderRadius: 12,
     background: "#ffffff",
     boxShadow: "inset 0 0 8px rgba(0,0,0,0.04)",
-    maxHeight: "60vh",            // altura reduzida
+    maxHeight: "60vh",
   },
   avatarSmall: {
     width: 28,
@@ -300,7 +339,6 @@ const styles = {
     padding: "10px 16px",
     borderRadius: "20px",
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    transition: "background-color 0.2s",
     fontSize: 14,
   },
   timestamp: {
@@ -332,6 +370,13 @@ const styles = {
     fontSize: 14,
     borderRadius: 6,
     cursor: "pointer",
-    transition: "background-color 0.2s",
+  },
+  emptyState: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#666",
+    fontSize: 16,
   },
 };

@@ -1,153 +1,136 @@
 // src/components/MapPage.js
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import {
+  GoogleMap,
+  OverlayView,
+  useJsApiLoader,
+} from "@react-google-maps/api";
 import { getDocs, collection } from "firebase/firestore";
-import { db } from "../config/firebase";
-import L from "leaflet";
+import { ref, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../config/firebase";
 import { useAuth } from "../AuthContext";
-import MapDonationDetailModal from "./MapDonationDetailModal"; // Importe o modal
+import DonationDetailModal from "./DonationDetailModal";
 
-// Função auxiliar para criar um ícone dinâmico usando uma imagem
-const createIcon = (imgUrl, size = [40, 40]) => {
-  return L.divIcon({
-    html: `
-      <div style="
-        width:${size[0]}px; 
-        height:${size[1]}px; 
-        border-radius:50%; 
-        overflow:hidden; 
-        border:2px solid #fff; 
-        box-shadow: 0 0 5px rgba(0,0,0,0.5);
-      ">
-        <img 
-          src="${imgUrl}" 
-          style="width:100%; height:100%; object-fit:cover;" 
-        />
-      </div>
-    `,
-    className: "",
-    iconSize: size,
-  });
-};
+const containerStyle = { width: "100%", height: "100vh" };
+const LIBRARIES = ["places"];
 
-const MapPage = () => {
+export default function MapPage() {
   const { currentUser } = useAuth();
   const [donations, setDonations] = useState([]);
   const [currentPosition, setCurrentPosition] = useState(null);
-
-  // Novo estado para controlar o modal de detalhes
   const [selectedDonation, setSelectedDonation] = useState(null);
 
-  // Obter a localização do usuário via GPS
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    libraries: LIBRARIES,
+  });
+
+  // 1) Pega posição
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentPosition({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error("Erro ao obter localização:", error);
-        }
+    navigator.geolocation?.getCurrentPosition(
+      ({ coords }) =>
+        setCurrentPosition({ lat: coords.latitude, lng: coords.longitude }),
+      console.error
+    );
+  }, []);
+
+  // 2) Fetch + getDownloadURL + filtro de status e userId
+  useEffect(() => {
+    if (!currentUser) return;  // só busca depois de termos currentUser
+
+    (async () => {
+      const snap = await getDocs(collection(db, "donationItems"));
+      const all = await Promise.all(
+        snap.docs.map(async (doc) => {
+          const data = { id: doc.id, ...doc.data() };
+          // só converte se tiver caminho
+          if (data.imageUrl) {
+            try {
+              data.imageUrl = await getDownloadURL(
+                ref(storage, data.imageUrl)
+              );
+            } catch {
+              data.imageUrl = null;
+            }
+          }
+          return data;
+        })
       );
-    }
-  }, []);
 
-  // Buscar as doações que possuem coordenadas
-  useEffect(() => {
-    const fetchDonations = async () => {
-      try {
-        const donationRef = collection(db, "donationItems");
-        const data = await getDocs(donationRef);
-        const donationsData = data.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter((donation) => donation.latitude && donation.longitude);
+      // aqui já aplicamos os filtros:
+      const filtered = all
+        .filter(
+          (d) =>
+            d.latitude != null &&
+            d.longitude != null &&
+            d.userId !== currentUser.uid &&   // não do seu próprio usuário
+            d.status === "disponível"         // apenas disponíveis
+        )
+        .map((d) => ({
+          ...d,
+          imageUrl:
+            d.imageUrl ||
+            "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+        }));
 
-        setDonations(donationsData);
-      } catch (error) {
-        console.error("Erro ao buscar doações:", error);
-      }
-    };
-    fetchDonations();
-  }, []);
+      setDonations(filtered);
+    })().catch(console.error);
+  }, [currentUser]);
 
-  // Ícone do usuário
-  const userMarkerIcon =
-    currentUser && currentUser.photoURL
-      ? createIcon(currentUser.photoURL, [50, 50])
-      : createIcon("https://cdn-icons-png.flaticon.com/512/149/149071.png", [50, 50]);
+  if (loadError) return <p>Erro ao carregar o mapa.</p>;
+  if (!isLoaded || !currentPosition) return <p>Carregando mapa…</p>;
 
-  // Lida com o clique em um ícone de doação
-  const handleDonationClick = (donation) => {
-    setSelectedDonation(donation);
-  };
-
-  // Fecha o modal
-  const handleCloseModal = () => {
-    setSelectedDonation(null);
-  };
-
-  // Renderização
-  return currentPosition ? (
-    <div style={{ height: "100vh", width: "100%" }}>
-      <MapContainer
+  return (
+    <>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
         center={currentPosition}
         zoom={13}
-        style={{ height: "100%", width: "100%" }}
       >
-        <TileLayer
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {/* Marcador do usuário omitido */}
 
-        {/* Marker do Usuário */}
-        <Marker position={currentPosition} icon={userMarkerIcon} />
-
-        {/* Markers de Doações */}
-        {donations.map((donation) => {
-          const donationImg = donation.imageUrl
-            ? `https://firebasestorage.googleapis.com/v0/b/doafacil-ab7e4.firebasestorage.app/o/${encodeURIComponent(
-                donation.imageUrl
-              )}?alt=media`
-            : "https://cdn-icons-png.flaticon.com/512/684/684908.png";
-
-          // Ícones normal e de hover
-          const donationIconNormal = createIcon(donationImg, [40, 40]);
-          const donationIconHover = createIcon(donationImg, [50, 50]);
-
-          return (
-            <Marker
-              key={donation.id}
-              position={[donation.latitude, donation.longitude]}
-              icon={donationIconNormal}
-              eventHandlers={{
-                click: () => handleDonationClick(donation),
-                mouseover: (e) => {
-                  e.target.setIcon(donationIconHover);
-                },
-                mouseout: (e) => {
-                  e.target.setIcon(donationIconNormal);
-                },
+        {/* Apenas doações filtradas */}
+        {donations.map((d) => (
+          <OverlayView
+            key={d.id}
+            position={{ lat: d.latitude, lng: d.longitude }}
+            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+          >
+            <div
+              onClick={() => setSelectedDonation(d)}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                overflow: "hidden",
+                border: "2px solid white",
+                boxShadow: "0 0 5px rgba(0,0,0,0.5)",
+                transition: "transform 0.2s",
+                cursor: "pointer",
               }}
-            />
-          );
-        })}
-      </MapContainer>
+            >
+              <img
+                src={d.imageUrl}
+                alt={d.title || "Doação"}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "https://cdn-icons-png.flaticon.com/512/684/684908.png";
+                }}
+              />
+            </div>
+          </OverlayView>
+        ))}
+      </GoogleMap>
 
-      {/* Modal de detalhes da doação */}
       {selectedDonation && (
-        <MapDonationDetailModal
+        <DonationDetailModal
           donation={selectedDonation}
-          onClose={handleCloseModal}
+          onClose={() => setSelectedDonation(null)}
         />
       )}
-    </div>
-  ) : (
-    <p>Carregando mapa...</p>
+    </>
   );
-};
-
-export default MapPage;
+}
