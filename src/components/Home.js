@@ -2,12 +2,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from "../AuthContext";
+import AdSense from "../components/AdSense";
 
 const Home = () => {
   const { currentUser } = useAuth();
 
   return (
     <div style={styles.page}>
+
+      {/* AdSense acima do conteúdo */}
+      <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
+        <AdSense
+          adSlot="4451812486"
+          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+        />
+      </div>
       <header style={styles.header}>
         <h1 style={styles.title}>DoaFácil</h1>
         <p style={styles.subtitle}>
@@ -68,6 +77,14 @@ const Home = () => {
           </Link>
         )}
       </section>
+
+      {/* AdSense abaixo do conteúdo */}
+      <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
+        <AdSense
+          adSlot="4451812486"
+          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+        />
+      </div>
     </div>
   );
 };

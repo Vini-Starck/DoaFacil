@@ -20,6 +20,7 @@ import DonationDetailModal from "./components/DonationDetailModal";
 import MyDonations from "./components/MyDonations";
 import PrivateRoute from "./components/PrivateRoute";
 import EditDonation from "./components/EditDonation";
+import SupportPage from "./components/SupportPage";
 
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
           <Route path="/map" element={<PrivateRoute element={<MapPage />} />} />
           <Route path="/notifications" element={<PrivateRoute element={<NotificationsPage />} />} />
           <Route path="/edit-donation/:id" element={<PrivateRoute element={<EditDonation />} />} />
+          <Route path="/support" element={<PrivateRoute element={<SupportPage />} />} />
           <Route
             path="/contact/:userId/:donationId"
             element={<PrivateRoute element={<ContactProfilePage />} />}

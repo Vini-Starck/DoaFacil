@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, deleteObject } from "firebase/storage";
 import CustomPlacesAutocomplete from "./CustomPlacesAutocomplete";
+import AdSense from './AdSense';
 
 const EditDonation = () => {
   const { id } = useParams();
@@ -162,6 +163,13 @@ const EditDonation = () => {
 
   return (
     <div style={styles.page}>
+      {/* AdSense acima do formulário */}
+    <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
       <form onSubmit={handleSubmit} style={styles.container}>
         <h2>Editar Doação</h2>
         <label style={styles.label}>Título (máx. 50)</label>
@@ -201,6 +209,13 @@ const EditDonation = () => {
           Salvar Alterações
         </button>
       </form>
+      {/* AdSense abaixo do formulário */}
+    <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { auth, storage, db } from "../config/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { deleteUserAndDonations } from "../utils/userUtils";
+import AdSense from './AdSense';
 
 const Profile = () => {
   const { uid } = useParams();
@@ -105,6 +106,15 @@ const Profile = () => {
   };
 
   return (
+    <div>
+
+    {/* AdSense acima do cartão */}
+    <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
     <div style={styles.card}>
       {userData ? (
         <>
@@ -174,6 +184,14 @@ const Profile = () => {
       ) : (
         <p>Carregando perfil...</p>
       )}
+    </div>
+    {/* AdSense abaixo do cartão */}
+    <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
     </div>
   );
 };

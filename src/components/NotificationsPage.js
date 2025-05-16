@@ -16,6 +16,7 @@ import {
 import { Link } from "react-router-dom";
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
+import AdSense from "./AdSense"; // Importando AdSense
 
 
 function RatingModal({ visible, onClose, onSubmit, targetUser }) {
@@ -201,7 +202,17 @@ const NotificationsPage = () => {
 };
 
   return (
-    <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
+  <div style={{ display: "flex", justifyContent: "center", gap: 20, padding: 20 }}>
+    {/* Anúncio à esquerda */}
+    <div style={{ flex: "0 0 320px", display: "flex", justifyContent: "center" }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '20px auto', maxWidth: '320px' }}
+      />
+    </div>
+
+    {/* Notificações centralizadas */}
+    <div style={{ flex: "1 1 600px", maxWidth: 600 }}>
       <h2 style={{ textAlign: "center", marginBottom: 20 }}>Notificações</h2>
       {notifications.length === 0 && (
         <p style={{ textAlign: "center" }}>Nenhuma notificação.</p>
@@ -223,8 +234,16 @@ const NotificationsPage = () => {
         targetUser={targetUser}
       />
     </div>
-  );
-};
+
+    {/* Anúncio à direita */}
+    <div style={{ flex: "0 0 320px", display: "flex", justifyContent: "center" }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '20px auto', maxWidth: '320px' }}
+      />
+    </div>
+  </div>
+);
 
 function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk, onOpenEvaluate }) {
   const [donationImg, setDonationImg] = useState(null);
@@ -421,7 +440,7 @@ function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk, on
   }
 
   return null;
-}
+}};
 
 const modalStyles = {
   overlay: { position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 },

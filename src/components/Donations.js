@@ -3,6 +3,7 @@ import { useAuth } from "../AuthContext";
 import { db, storage } from "../config/firebase";
 import { getDocs, collection } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
+import AdSense from "./AdSense";
 
 const Donations = ({ onDonationClick }) => {
   const { currentUser } = useAuth();
@@ -105,6 +106,13 @@ const Donations = ({ onDonationClick }) => {
 
   return (
     <section style={{ padding: 20 }}>
+       {/* AdSense acima dos filtros/lista */}
+    <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
       <div style={{ marginBottom: 20, maxWidth: 1200, margin: "0 auto" }}>
         <input
           type="text"
@@ -184,6 +192,14 @@ const Donations = ({ onDonationClick }) => {
       ) : (
         <p style={{ textAlign: "center", color: "#666" }}>Nenhuma doação encontrada.</p>
       )}
+
+      {/* AdSense abaixo da lista */}
+    <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
     </section>
   );
 };

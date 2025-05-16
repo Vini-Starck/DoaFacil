@@ -6,6 +6,7 @@ import { db, auth, storage } from "../config/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import CustomPlacesAutocomplete from "./CustomPlacesAutocomplete";
+import AdSense from './AdSense';
 
 const AddDonation = () => {
   // Estados principais
@@ -215,6 +216,13 @@ const AddDonation = () => {
 
   return (
     <div style={styles.page}>
+      {/* AdSense acima do formulário */}
+    <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
       <form onSubmit={handleSubmit} style={styles.container}>
         <h2>Fazer uma Doação</h2>
 
@@ -311,6 +319,13 @@ const AddDonation = () => {
           Cadastrar Doação
         </button>
       </form>
+      {/* AdSense abaixo do formulário */}
+    <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
     </div>
   );
 };

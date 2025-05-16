@@ -46,7 +46,7 @@ const Header = () => {
       <img
         src={require("../icons/logo.png")}
         alt="DoaFácil Logo"
-        style={styles.logoImage || { width: 60, height: 60, marginRight: 10, verticalAlign: "middle" }}
+        style={styles.logoImage || { width: 50, height: 50, marginRight: 10, verticalAlign: "middle" }}
       />
       <span style={{ marginLeft: 8, verticalAlign: "middle" }}>DoaFácil</span>
     </Link>

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../config/firebase';
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
 import { createUserDocumentIfNotExists } from '../utils/userUtils';
+import AdSense from './AdSense';
 
 const Register = () => {
   const [displayName, setDisplayName] = useState('');
@@ -116,6 +117,13 @@ const Register = () => {
 
   return (
     <div style={styles.page}>
+      {/* AdSense acima do formulário */}
+    <div style={{ marginBottom: 24 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
       <div style={styles.container}>
         <h2 style={styles.title}>Criar Conta</h2>
         <form onSubmit={handleRegister} style={styles.form}>
@@ -178,6 +186,13 @@ const Register = () => {
           Criar Conta com Google
         </button>
       </div>
+      {/* AdSense abaixo do formulário */}
+    <div style={{ marginTop: 24 }}>
+      <AdSense
+        adSlot="4451812486"
+        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+      />
+    </div>
     </div>
   );
 };
