@@ -108,7 +108,7 @@ const NotificationsPage = () => {
         donationId: notif.donationId,
         donationTitle: notif.donationTitle,
         chatId: chatId, // 🔥 referencia o chat criado
-        message: `Sua solicitação para "${notif.donationTitle}" foi aceita! Você pode conversar com o doador agora.`,
+        message: `Sua solicitação para a doação "${notif.donationTitle}" foi aceita! Você pode conversar com o doador agora.`,
         status: "unread",
         createdAt: serverTimestamp(),
       });
@@ -134,7 +134,7 @@ const NotificationsPage = () => {
         type: "requestDeclined",
         donationId: notif.donationId,
         donationTitle: notif.donationTitle,
-        message: `Sua solicitação para "${notif.donationTitle}" foi recusada.`,
+        message: `Sua solicitação para a doação "${notif.donationTitle}" foi recusada.`,
         status: "unread",
         createdAt: serverTimestamp(),
       });
@@ -402,7 +402,7 @@ function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk, on
     return (
       <div style={cardStyle}>
         <p>
-          Você aceitou a solicitação de <strong>{notif.fromUserName}</strong> para{" "}
+          Você aceitou a solicitação de <strong>{notif.fromUserName}</strong> para a doação {" "}
           <strong>{notif.donationTitle}</strong>.
         </p>
       </div>

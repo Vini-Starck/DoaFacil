@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/components/Header.js
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ProfileMenu from "./ProfileMenu";
 import notificationIcon from "../icons/notification.png";
@@ -6,115 +7,138 @@ import { useAuth } from "../AuthContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
 
+const navItems = [
+  { name: "Doações", path: "/donations" },
+  { name: "Doar", path: "/add-donation" },
+  { name: "Chat", path: "/chat" },
+  { name: "Mapa", path: "/map" },
+  { name: "Notificações", path: "/notifications" },
+];
+
 const Header = () => {
   const { currentUser } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [notificationsCount, setNotificationsCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(0);
+  const [hoverNav, setHoverNav] = useState(null);
+  const [hoverNotif, setHoverNotif] = useState(false);
+  const [hoverProf, setHoverProf] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Estados para hover
-  const [hoveredItem, setHoveredItem] = useState(null);
-  const [hoveredNotification, setHoveredNotification] = useState(false);
-  const [hoveredProfile, setHoveredProfile] = useState(false);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!currentUser) return;
-
     const q = query(
       collection(db, "notifications"),
       where("toUser", "==", currentUser.uid),
       where("status", "in", ["unread", "pending"])
     );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setNotificationsCount(snapshot.docs.length);
-    });
-
-    return unsubscribe;
+    return onSnapshot(q, snap => setNotifCount(snap.docs.length));
   }, [currentUser]);
 
-  const handleProfileClick = (e) => {
-    setAnchorEl(e.currentTarget);
-  };
+  const handleProfileClick = e => setAnchorEl(e.currentTarget);
+  const handleProfileClose = () => setAnchorEl(null);
 
-  const handleProfileMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const toggleMenu = () => setMenuOpen(o => !o);
+
+  const renderNavList = () => (
+    <ul style={styles.navList}>
+      {navItems.map((item, idx) => (
+        <li
+          key={idx}
+          style={styles.navItem}
+          onMouseEnter={() => setHoverNav(idx)}
+          onMouseLeave={() => setHoverNav(null)}
+        >
+          <Link
+            to={item.path}
+            style={{
+              ...styles.navLink,
+              transform: hoverNav === idx ? "scale(1.1)" : "scale(1)",
+            }}
+          >
+            {item.name}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <header style={styles.header}>
-    <Link to="/" style={styles.logo}>
-      <img
-        src={require("../icons/logo.png")}
-        alt="DoaFácil Logo"
-        style={styles.logoImage || { width: 50, height: 50, marginRight: 10, verticalAlign: "middle" }}
-      />
-      <span style={{ marginLeft: 8, verticalAlign: "middle" }}>DoaFácil</span>
-    </Link>
-      <nav>
-        <ul style={styles.navList}>
-          {[
-            { name: "Doações", path: "/donations" },
-            { name: "Doar", path: "/add-donation" },
-            { name: "Chat", path: "/chat" },
-            { name: "Mapa", path: "/map" },
-            { name: "Notificações", path: "/notifications" },
-          ].map((item, index) => (
-            <li
-              key={index}
-              onMouseEnter={() => setHoveredItem(index)}
-              onMouseLeave={() => setHoveredItem(null)}
-              style={{
-                ...styles.navItem,
-                transform: hoveredItem === index ? "scale(1.1)" : "scale(1)",
-                transition: "transform 0.3s ease",
-              }}
-            >
-              <Link to={item.path} style={styles.navLink}>
-                {item.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {/* Logo */}
+      <Link to="/" style={styles.logo}>
+        <img
+          src={require("../icons/logo.png")}
+          alt="DoaFácil Logo"
+          style={styles.logoImage}
+        />
+        <span style={styles.logoText}>DoaFácil</span>
+      </Link>
 
+      {/* Nav ou Hamburger */}
+      {isMobile ? (
+        <div style={styles.hamburger} onClick={toggleMenu}>
+          <div style={styles.bar} />
+          <div style={styles.bar} />
+          <div style={styles.bar} />
+        </div>
+      ) : (
+        <nav>{renderNavList()}</nav>
+      )}
+
+      {/* Áreas à direita */}
       <div style={styles.rightSection}>
         {currentUser ? (
           <>
-            {/* Notificações */}
             <Link
               to="/notifications"
               style={{
                 ...styles.notificationContainer,
-                transform: hoveredNotification ? "scale(1.1) rotate(-3deg)" : "scale(1)",
-                transition: "transform 0.2s ease",
+                transform: hoverNotif ? "scale(1.1) rotate(-3deg)" : "scale(1)",
               }}
-              onMouseEnter={() => setHoveredNotification(true)}
-              onMouseLeave={() => setHoveredNotification(false)}
+              onMouseEnter={() => setHoverNotif(true)}
+              onMouseLeave={() => setHoverNotif(false)}
             >
-              <img src={notificationIcon} alt="Notificações" style={styles.notificationIcon} />
-              {notificationsCount > 0 && (
+              <img
+                src={notificationIcon}
+                alt="Notificações"
+                style={styles.notificationIcon}
+              />
+              {notifCount > 0 && (
                 <span style={styles.notificationBadge}>
-                  {notificationsCount >= 10 ? "10+" : notificationsCount}
+                  {notifCount > 9 ? "9+" : notifCount}
                 </span>
               )}
             </Link>
-
-            {/* Foto de perfil */}
-            <div style={{ position: "relative" }}>
+            <div style={styles.profileWrapper}>
               <img
-                src={currentUser.photoURL || "/icons/default-profile.png"}
+                src={
+                  currentUser.photoURL || "/icons/default-profile.png"
+                }
                 alt="Perfil"
                 style={{
                   ...styles.profileImage,
-                  boxShadow: hoveredProfile ? "0 0 12px rgba(255, 255, 255, 0.6)" : "none",
-                  transform: hoveredProfile ? "scale(1.1)" : "scale(1)",
-                  transition: "all 0.3s ease",
+                  transform: hoverProf ? "scale(1.1)" : "scale(1)",
+                  boxShadow: hoverProf
+                    ? "0 0 12px rgba(255,255,255,0.6)"
+                    : "none",
                 }}
-                onMouseEnter={() => setHoveredProfile(true)}
-                onMouseLeave={() => setHoveredProfile(false)}
+                onMouseEnter={() => setHoverProf(true)}
+                onMouseLeave={() => setHoverProf(false)}
                 onClick={handleProfileClick}
               />
-              <ProfileMenu currentUser={currentUser} anchorEl={anchorEl} onClose={handleProfileMenuClose} />
+              <ProfileMenu
+                currentUser={currentUser}
+                anchorEl={anchorEl}
+                onClose={handleProfileClose}
+              />
             </div>
           </>
         ) : (
@@ -128,6 +152,13 @@ const Header = () => {
           </div>
         )}
       </div>
+
+      {/* Mobile dropdown */}
+      {isMobile && menuOpen && (
+        <nav style={styles.mobileMenu}>
+          {renderNavList()}
+        </nav>
+      )}
     </header>
   );
 };
@@ -138,7 +169,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "12px 24px",
-    background: "rgba(255, 255, 255, 0.1)",
+    background: "rgba(255,255,255,0.1)",
     boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
     backdropFilter: "blur(10px)",
     position: "sticky",
@@ -148,13 +179,13 @@ const styles = {
     transition: "all 0.3s ease-in-out",
   },
   logo: {
+    display: "flex",
+    alignItems: "center",
     textDecoration: "none",
     color: "#fff",
-    fontSize: "24px",
-    fontWeight: "bold",
-    letterSpacing: "1px",
-    transition: "color 0.3s",
   },
+  logoImage: { width: 50, height: 50, marginRight: 8 },
+  logoText: { fontSize: 24, fontWeight: "bold", color: "#fff" },
   navList: {
     display: "flex",
     listStyle: "none",
@@ -204,13 +235,16 @@ const styles = {
     lineHeight: "1",
     animation: "pulse 1.5s infinite",
   },
+  profileWrapper: {
+    position: "relative",
+  },
   profileImage: {
     width: "42px",
     height: "42px",
     borderRadius: "50%",
     cursor: "pointer",
     objectFit: "cover",
-    border: "2px solid rgba(255, 255, 255, 0.5)",
+    border: "2px solid rgba(255,255,255,0.5)",
   },
   authButtons: {
     display: "flex",
@@ -222,6 +256,27 @@ const styles = {
     fontSize: "16px",
     fontWeight: "500",
     transition: "color 0.3s, box-shadow 0.3s",
+  },
+  hamburger: {
+    display: "flex",
+    flexDirection: "column",
+    cursor: "pointer",
+    gap: 4,
+  },
+  bar: {
+    width: 25,
+    height: 3,
+    background: "#fff",
+    transition: "transform 0.3s",
+  },
+  mobileMenu: {
+    position: "absolute",
+    top: 64,
+    left: 0,
+    right: 0,
+    background: "rgba(0,0,0,0.7)",
+    padding: "10px 0",
+    zIndex: 99,
   },
 };
 
