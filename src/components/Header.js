@@ -6,6 +6,8 @@ import notificationIcon from "../icons/notification.png";
 import { useAuth } from "../AuthContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
+import Logo_Doa_Facil from "../icons/Logo_Doa_Facil.png";
+import defaultProfilePic from "../icons/default-profile.png"; // Adicione o caminho correto para a imagem padrão
 
 const navItems = [
   { name: "Doações", path: "/donations" },
@@ -48,38 +50,43 @@ const Header = () => {
   const toggleMenu = () => setMenuOpen(o => !o);
 
   const renderNavList = () => (
-    <ul style={styles.navList}>
-      {navItems.map((item, idx) => (
-        <li
-          key={idx}
-          style={styles.navItem}
-          onMouseEnter={() => setHoverNav(idx)}
-          onMouseLeave={() => setHoverNav(null)}
+  <ul style={styles.navList}>
+    {navItems.map((item, idx) => (
+      <li
+        key={idx}
+        style={styles.navItem}
+        onMouseEnter={() => setHoverNav(idx)}
+        onMouseLeave={() => setHoverNav(null)}
+      >
+        <Link
+          to={item.path}
+          style={{
+            ...styles.navLink,
+            background: hoverNav === idx
+              ? "linear-gradient(90deg, #28a745 60%, #007bff 100%)"
+              : "transparent",
+            color: hoverNav === idx ? "#fff" : "#222",
+            transform: hoverNav === idx ? "scale(1.08)" : "scale(1)",
+            boxShadow: hoverNav === idx ? "0 2px 8px rgba(40,167,69,0.10)" : "none",
+          }}
         >
-          <Link
-            to={item.path}
-            style={{
-              ...styles.navLink,
-              transform: hoverNav === idx ? "scale(1.1)" : "scale(1)",
-            }}
-          >
-            {item.name}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
+          {item.name}
+        </Link>
+      </li>
+    ))}
+  </ul>
+);
 
   return (
     <header style={styles.header}>
       {/* Logo */}
       <Link to="/" style={styles.logo}>
         <img
-          src={require("../icons/logo.png")}
+          src={Logo_Doa_Facil}
           alt="DoaFácil Logo"
           style={styles.logoImage}
         />
-        <span style={styles.logoText}>DoaFácil</span>
+        
       </Link>
 
       {/* Nav ou Hamburger */}
@@ -120,15 +127,15 @@ const Header = () => {
             <div style={styles.profileWrapper}>
               <img
                 src={
-                  currentUser.photoURL || "/icons/default-profile.png"
+                  currentUser.photoURL || defaultProfilePic
                 }
                 alt="Perfil"
                 style={{
                   ...styles.profileImage,
                   transform: hoverProf ? "scale(1.1)" : "scale(1)",
                   boxShadow: hoverProf
-                    ? "0 0 12px rgba(255,255,255,0.6)"
-                    : "none",
+                    ? "0 0 12px rgba(40,167,69,0.18)"
+                    : "0 2px 8px rgba(40,167,69,0.10)",
                 }}
                 onMouseEnter={() => setHoverProf(true)}
                 onMouseLeave={() => setHoverProf(false)}
@@ -143,13 +150,33 @@ const Header = () => {
           </>
         ) : (
           <div style={styles.authButtons}>
-            <Link to="/login" style={styles.authLink}>
-              Logar
-            </Link>
-            <Link to="/register" style={styles.authLink}>
-              Criar Conta
-            </Link>
-          </div>
+  <Link
+    to="/login"
+    style={{
+      ...styles.authLink,
+      opacity: hoverNav === 'login' ? 0.85 : 1,
+      transform: hoverNav === 'login' ? "scale(1.06)" : "scale(1)",
+      boxShadow: hoverNav === 'login' ? "0 4px 16px rgba(40,167,69,0.15)" : styles.authLink.boxShadow,
+    }}
+    onMouseEnter={() => setHoverNav('login')}
+    onMouseLeave={() => setHoverNav(null)}
+  >
+    Logar
+  </Link>
+  <Link
+    to="/register"
+    style={{
+      ...styles.authLink,
+      opacity: hoverNav === 'register' ? 0.85 : 1,
+      transform: hoverNav === 'register' ? "scale(1.06)" : "scale(1)",
+      boxShadow: hoverNav === 'register' ? "0 4px 16px rgba(40,167,69,0.15)" : styles.authLink.boxShadow,
+    }}
+    onMouseEnter={() => setHoverNav('register')}
+    onMouseLeave={() => setHoverNav(null)}
+  >
+    Criar Conta
+  </Link>
+</div>
         )}
       </div>
 
@@ -169,23 +196,27 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "12px 24px",
-    background: "rgba(255,255,255,0.1)",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-    backdropFilter: "blur(10px)",
+    background: "#fff",
+    boxShadow: "0 4px 16px rgba(40,167,69,0.10)",
     position: "sticky",
     top: 0,
     zIndex: 100,
     borderRadius: "0 0 12px 12px",
     transition: "all 0.3s ease-in-out",
+    border: "2px solid #111", // mini borda preta ao redor do header
   },
   logo: {
     display: "flex",
     alignItems: "center",
     textDecoration: "none",
-    color: "#fff",
+    color: "#28a745",
   },
-  logoImage: { width: 50, height: 50, marginRight: 8 },
-  logoText: { fontSize: 24, fontWeight: "bold", color: "#fff" },
+  logoImage: { 
+    height: 40,   // Ajuste conforme desejar
+    marginRight: 8,
+    resizeMode: 'contain'  // ou 'cover', dependendo do efeito desejado
+  },
+  logoText: { fontSize: 24, fontWeight: "bold", color: "#28a745", letterSpacing: 1 },
   navList: {
     display: "flex",
     listStyle: "none",
@@ -198,12 +229,13 @@ const styles = {
   },
   navLink: {
     textDecoration: "none",
-    color: "#fff",
+    color: "#222",
     fontSize: "16px",
     fontWeight: "500",
     padding: "10px 14px",
     borderRadius: "6px",
-    transition: "transform 0.3s, background 0.3s",
+    transition: "transform 0.3s, background 0.3s, color 0.3s",
+    // O hover será aplicado inline no componente
   },
   rightSection: {
     display: "flex",
@@ -224,7 +256,7 @@ const styles = {
     position: "absolute",
     top: "-5px",
     right: "-5px",
-    background: "red",
+    background: "#dc3545",
     color: "#fff",
     borderRadius: "50%",
     padding: "3px 6px",
@@ -233,29 +265,30 @@ const styles = {
     minWidth: "20px",
     textAlign: "center",
     lineHeight: "1",
-    animation: "pulse 1.5s infinite",
+    boxShadow: "0 2px 8px rgba(220,53,69,0.15)",
   },
   profileWrapper: {
     position: "relative",
   },
-  profileImage: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "50%",
-    cursor: "pointer",
-    objectFit: "cover",
-    border: "2px solid rgba(255,255,255,0.5)",
-  },
   authButtons: {
     display: "flex",
-    gap: "12px",
+    gap: "10px",
   },
   authLink: {
     textDecoration: "none",
     color: "#fff",
-    fontSize: "16px",
-    fontWeight: "500",
-    transition: "color 0.3s, box-shadow 0.3s",
+    fontSize: "15px", // tamanho levemente menor
+    fontWeight: "bold",
+    padding: "10px 20px", // menor altura e largura
+    borderRadius: "6px",
+    background: "linear-gradient(90deg, #28a745 60%, #007bff 100%)",
+    boxShadow: "0 2px 8px rgba(40,167,69,0.10)",
+    transition: "opacity 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s, transform 0.2s",
+    border: "none",
+    outline: "none",
+    display: "inline-block",
+    marginTop: 0,
+    letterSpacing: 0.5,
   },
   hamburger: {
     display: "flex",
@@ -266,18 +299,35 @@ const styles = {
   bar: {
     width: 25,
     height: 3,
-    background: "#fff",
+    background: "#28a745",
     transition: "transform 0.3s",
+    borderRadius: 2,
   },
   mobileMenu: {
     position: "absolute",
     top: 64,
     left: 0,
     right: 0,
-    background: "rgba(0,0,0,0.7)",
+    background: "#fff",
     padding: "10px 0",
     zIndex: 99,
+    boxShadow: "0 4px 16px rgba(40,167,69,0.10)",
+    borderRadius: "0 0 12px 12px",
   },
+  // Adicione a borda preta na foto de perfil
+  profileImage: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    cursor: "pointer",
+    objectFit: "cover",
+    border: "2px solid #111", // borda preta
+    background: "#fafbfc",
+    transition: "transform 0.3s, box-shadow 0.3s",
+  },
+// ...existing code...
 };
+
+
 
 export default Header;

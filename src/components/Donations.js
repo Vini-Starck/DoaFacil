@@ -5,12 +5,31 @@ import { getDocs, collection } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import AdSense from "./AdSense";
 
+const donationTypes = [
+  { value: "", label: "Todos os Tipos" },
+  { value: "Roupas", label: "Roupas" },
+  { value: "Móveis", label: "Móveis" },
+  { value: "Eletrodomésticos", label: "Eletrodomésticos" },
+  { value: "Alimentos", label: "Alimentos" },
+];
+
+const kmRanges = [
+  { value: 0, label: "Qualquer distância" },
+  { value: 5, label: "Até 5 km" },
+  { value: 10, label: "Até 10 km" },
+  { value: 25, label: "Até 25 km" },
+  { value: 50, label: "Até 50 km" },
+  { value: 100, label: "Até 100 km" },
+];
+
 const Donations = ({ onDonationClick }) => {
   const { currentUser } = useAuth();
   const [donations, setDonations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterNearest, setFilterNearest] = useState(false);
   const [filterType, setFilterType] = useState("");
+  const [filterCity, setFilterCity] = useState("");
+  const [kmRange, setKmRange] = useState(0);
   const [hoveredId, setHoveredId] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
 
@@ -45,7 +64,7 @@ const Donations = ({ onDonationClick }) => {
 
   // Get user location if filtering nearest
   useEffect(() => {
-    if (filterNearest) {
+    if (filterNearest || kmRange > 0) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
@@ -57,7 +76,7 @@ const Donations = ({ onDonationClick }) => {
         { enableHighAccuracy: true }
       );
     }
-  }, [filterNearest]);
+  }, [filterNearest, kmRange]);
 
   // Haversine
   const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -76,18 +95,25 @@ const Donations = ({ onDonationClick }) => {
   // Apply filters
   let filteredDonations = donations.filter((donation) => {
     const term = searchTerm.toLowerCase();
-    const titleMatch = donation.title.toLowerCase().includes(term);
-    const descMatch = donation.description.toLowerCase().includes(term);
+    const cityTerm = filterCity.toLowerCase();
+    const titleMatch = donation.title?.toLowerCase().includes(term);
+    const descMatch = donation.description?.toLowerCase().includes(term);
     const typeMatch = filterType ? donation.donationType === filterType : true;
+    // Pesquisa por cidade digitada (campo livre)
+    const cityMatch = cityTerm
+      ? (donation.location || "").toLowerCase().includes(cityTerm)
+      : true;
     return (
       (titleMatch || descMatch) &&
       typeMatch &&
+      cityMatch &&
       donation.status === "disponível" &&
       donation.userId !== currentUser?.uid
     );
   });
 
-  if (filterNearest && userLocation) {
+  // Add distance if needed
+  if ((filterNearest || kmRange > 0) && userLocation) {
     filteredDonations = filteredDonations
       .map((d) => ({
         ...d,
@@ -101,107 +127,310 @@ const Donations = ({ onDonationClick }) => {
               )
             : Infinity,
       }))
+      .filter((d) =>
+        kmRange > 0 ? d.distance !== undefined && d.distance <= kmRange : true
+      )
       .sort((a, b) => a.distance - b.distance);
   }
 
+
   return (
-    <section style={{ padding: 20 }}>
-       {/* AdSense acima dos filtros/lista */}
-    <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
-      <AdSense
-        adSlot="4451812486"
-        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-      />
-    </div>
-      <div style={{ marginBottom: 20, maxWidth: 1200, margin: "0 auto" }}>
-        <input
-          type="text"
-          placeholder="Pesquisar doações..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ width: "100%", padding: 10, borderRadius: 5, border: "1px solid #ccc", marginBottom: 10 }}
+    <section style={styles.page}>
+      {/* AdSense acima dos filtros/lista */}
+      <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
+        <AdSense
+          adSlot="4451812486"
+          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
         />
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 5 }}>
+      </div>
+      <div style={styles.container}>
+        <h1 style={styles.title}>Doações Disponíveis</h1>
+        <div style={styles.filtersBar}>
+          <input
+            type="text"
+            placeholder="Pesquisar por título ou descrição..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={styles.input}
+          />
+          <input
+            type="text"
+            placeholder="Pesquisar por cidade..."
+            value={filterCity}
+            onChange={(e) => setFilterCity(e.target.value)}
+            style={styles.input}
+          />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            style={styles.select}
+          >
+            {donationTypes.map((type) => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+          <select
+            value={kmRange}
+            onChange={(e) => setKmRange(Number(e.target.value))}
+            style={styles.select}
+          >
+            {kmRanges.map((range) => (
+              <option key={range.value} value={range.value}>{range.label}</option>
+            ))}
+          </select>
+          <label style={styles.checkboxLabel}>
             <input
               type="checkbox"
               checked={filterNearest}
               onChange={() => setFilterNearest(!filterNearest)}
+              style={styles.checkbox}
             />
-            Mostrar doações mais próximas
+            <span>Mais próximas</span>
           </label>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            style={{ flex: 1, padding: 10, borderRadius: 5, border: "1px solid #ccc" }}
-          >
-            <option value="">Todos os Tipos</option>
-            <option value="Roupas">Roupas</option>
-            <option value="Móveis">Móveis</option>
-            <option value="Eletrodomésticos">Eletrodomésticos</option>
-            <option value="Alimentos">Alimentos</option>
-          </select>
         </div>
-      </div>
-
-      {filteredDonations.length ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20, padding: 20, maxWidth: 1200, margin: "0 auto" }}>
-          {filteredDonations.map((donation) => {
-            const isHovered = hoveredId === donation.id;
-            return (
-              <div
-                key={donation.id}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  padding: 15,
-                  borderRadius: 12,
-                  boxShadow: isHovered ? "0 6px 12px rgba(0,0,0,0.2)" : "0 4px 8px rgba(0,0,0,0.1)",
-                  backgroundColor: "#fff",
-                  cursor: "pointer",
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                  transform: isHovered ? "scale(1.02)" : "scale(1)",
-                }}
-                onClick={() => onDonationClick(donation)}
-                onMouseEnter={() => setHoveredId(donation.id)}
-                onMouseLeave={() => setHoveredId(null)}
-              >
-                {donation.imageUrl ? (
-                  <img
-                    src={donation.imageUrl}
-                    alt="Imagem do item"
-                    style={{ width: "100%", maxWidth: 200, height: 200, objectFit: "cover", borderRadius: 8, border: "2px solid #ddd", marginBottom: 10 }}
-                  />
-                ) : null}
-                <div style={{ textAlign: "center", width: "100%" }}>
-                  <h2 style={{ margin: 0, fontSize: 18, color: "#333", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={donation.title}>
-                    {donation.title}
-                  </h2>
-                  <p style={{ margin: "0 0 10px", color: "#666" }}>{donation.description}</p>
-                  {filterNearest && donation.distance !== undefined && (
-                    <p style={{ margin: 0, color: "#888" }}>
-                      {donation.distance.toFixed(1)} km de distância
-                    </p>
+        {filteredDonations.length ? (
+          <div style={styles.grid}>
+            {filteredDonations.map((donation) => {
+              const isHovered = hoveredId === donation.id;
+              return (
+                <div
+                  key={donation.id}
+                  style={{
+                    ...styles.card,
+                    ...(isHovered ? styles.cardHover : {})
+                  }}
+                  onClick={() => onDonationClick(donation)}
+                  onMouseEnter={() => setHoveredId(donation.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  title={donation.title}
+                >
+                  {donation.imageUrl ? (
+                    <img
+                      src={donation.imageUrl}
+                      alt="Imagem do item"
+                      style={styles.cardImage}
+                    />
+                  ) : (
+                    <div style={styles.noImage}>Sem imagem</div>
                   )}
+                  <div style={styles.cardContent}>
+                    <h2 style={styles.cardTitle}>{donation.title}</h2>
+                    <p style={styles.cardDesc}>{donation.description}</p>
+                    <div style={styles.cardMeta}>
+                      <span style={styles.cardType}>{donation.donationType}</span>
+                      {donation.city && (
+                        <span style={styles.cardCity}>{donation.city}</span>
+                      )}
+                      {(filterNearest || kmRange > 0) && donation.distance !== undefined && (
+                        <span style={styles.cardDistance}>
+                          {donation.distance !== Infinity
+                            ? `${donation.distance.toFixed(1)} km`
+                            : "Distância desconhecida"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <p style={{ textAlign: "center", color: "#666" }}>Nenhuma doação encontrada.</p>
-      )}
-
+              );
+            })}
+          </div>
+        ) : (
+          <p style={styles.noResults}>Nenhuma doação encontrada.</p>
+        )}
+      </div>
       {/* AdSense abaixo da lista */}
-    <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
-      <AdSense
-        adSlot="4451812486"
-        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-      />
-    </div>
+      <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
+        <AdSense
+          adSlot="4451812486"
+          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+        />
+      </div>
     </section>
   );
+};
+
+const styles = {
+  page: {
+    background: "linear-gradient(135deg, #28a745 0%, #007bff 100%)",
+    minHeight: "100vh",
+    padding: "0 0 40px 0",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+  },
+  container: {
+    background: "rgba(255,255,255,0.97)",
+    borderRadius: 16,
+    maxWidth: 1200,
+    margin: "0 auto 32px",
+    padding: "36px 24px 28px 24px",
+    boxShadow: "0 8px 32px rgba(40, 167, 69, 0.10), 0 1.5px 8px rgba(0,0,0,0.08)",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#28a745",
+    marginBottom: 24,
+    letterSpacing: 1,
+    textAlign: "center",
+  },
+  filtersBar: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 16,
+    marginBottom: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  input: {
+    padding: "12px 16px",
+    borderRadius: 8,
+    border: "1.5px solid #e0e0e0",
+    fontSize: 16,
+    minWidth: 220,
+    outline: "none",
+    background: "#fafbfc",
+    transition: "border 0.2s",
+  },
+  select: {
+    padding: "12px 16px",
+    borderRadius: 8,
+    border: "1.5px solid #e0e0e0",
+    fontSize: 16,
+    outline: "none",
+    background: "#fafbfc",
+    minWidth: 150,
+    transition: "border 0.2s",
+  },
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 15,
+    color: "#222",
+    fontWeight: 500,
+    background: "#f6f6f6",
+    padding: "8px 16px",
+    borderRadius: 8,
+    cursor: "pointer",
+    userSelect: "none",
+    border: "1.5px solid #e0e0e0",
+  },
+  checkbox: {
+    accentColor: "#28a745",
+    width: 18,
+    height: 18,
+    marginRight: 4,
+    cursor: "pointer",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
+    gap: 28,
+    padding: "10px 0",
+  },
+  card: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: 18,
+    borderRadius: 14,
+    boxShadow: "0 4px 12px rgba(40,167,69,0.08)",
+    backgroundColor: "#fff",
+    cursor: "pointer",
+    transition: "transform 0.18s, box-shadow 0.18s",
+    transform: "scale(1)",
+    border: "1.5px solid #e0e0e0",
+    minHeight: 340,
+    position: "relative",
+  },
+  cardHover: {
+    transform: "scale(1.045)",
+    boxShadow: "0 8px 24px rgba(40,167,69,0.16)",
+    border: "1.5px solid #28a745",
+  },
+  cardImage: {
+    width: "100%",
+    maxWidth: 210,
+    height: 180,
+    objectFit: "cover",
+    borderRadius: 10,
+    border: "2px solid #dbdbdb",
+    marginBottom: 14,
+    background: "#fafbfc",
+  },
+  noImage: {
+    width: 210,
+    height: 180,
+    borderRadius: 10,
+    background: "#f0f0f0",
+    color: "#aaa",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontStyle: "italic",
+    marginBottom: 14,
+    fontSize: 15,
+    border: "2px dashed #dbdbdb",
+  },
+  cardContent: {
+    width: "100%",
+    textAlign: "center",
+  },
+  cardTitle: {
+    margin: "0 0 6px",
+    fontSize: 20,
+    color: "#28a745",
+    fontWeight: "bold",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  cardDesc: {
+    margin: "0 0 10px",
+    color: "#444",
+    fontSize: 15,
+    minHeight: 38,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  cardMeta: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 6,
+    fontSize: 14,
+    flexWrap: "wrap",
+  },
+  cardType: {
+    background: "#e8f5e9",
+    color: "#28a745",
+    borderRadius: 6,
+    padding: "3px 10px",
+    fontWeight: "bold",
+    fontSize: 13,
+  },
+  cardCity: {
+    background: "#f0f0f0",
+    color: "#007bff",
+    borderRadius: 6,
+    padding: "3px 10px",
+    fontWeight: "bold",
+    fontSize: 13,
+  },
+  cardDistance: {
+    background: "#e3eafc",
+    color: "#007bff",
+    borderRadius: 6,
+    padding: "3px 10px",
+    fontWeight: "bold",
+    fontSize: 13,
+  },
+  noResults: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 18,
+    margin: "40px 0",
+  },
 };
 
 export default Donations;

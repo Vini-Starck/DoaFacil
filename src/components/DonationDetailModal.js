@@ -31,6 +31,7 @@ export default function DonationDetailModal({ donation, onClose }) {
   const [creator, setCreator] = useState(null);
   const [creatorRating, setCreatorRating] = useState(null);
   const [requested, setRequested] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
   // Carrega dados do criador
   useEffect(() => {
@@ -48,6 +49,20 @@ export default function DonationDetailModal({ donation, onClose }) {
     }
     fetchCreator();
   }, [donation.userId]);
+
+  // Verifica se usuário logado é premium
+  useEffect(() => {
+    async function fetchUserPremium() {
+      if (!currentUser) return;
+      try {
+        const snap = await getDoc(doc(db, "users", currentUser.uid));
+        if (snap.exists()) setIsPremium(!!snap.data().isPremium);
+      } catch (err) {
+        setIsPremium(false);
+      }
+    }
+    fetchUserPremium();
+  }, [currentUser]);
 
   // Verifica se já existe solicitação para esta doação
   useEffect(() => {
@@ -71,6 +86,9 @@ export default function DonationDetailModal({ donation, onClose }) {
     checkRequested();
   }, [currentUser, donation.id]);
 
+  // Limite de solicitações para não-premium
+  const MAX_REQUESTS = 3;
+
   // Envia notificação de solicitação
   const handleRequest = async () => {
     if (!currentUser) return onClose();
@@ -78,6 +96,27 @@ export default function DonationDetailModal({ donation, onClose }) {
       alert("Você é o criador desta doação.");
       return;
     }
+
+    // Só aplica limite se NÃO for premium
+    if (!isPremium) {
+      try {
+        const q = query(
+          collection(db, "notifications"),
+          where("fromUser", "==", currentUser.uid),
+          where("type", "==", "requestDonation"),
+          where("status", "in", ["pending", "accepted"])
+        );
+        const snapshot = await getDocs(q);
+        if (snapshot.size >= MAX_REQUESTS) {
+          alert("Você atingiu o limite de solicitações de doação.");
+          return;
+        }
+      } catch (err) {
+        alert("Erro ao verificar limite de solicitações.");
+        return;
+      }
+    }
+
     try {
       // evita chats duplicados
       const q = query(
@@ -117,6 +156,18 @@ export default function DonationDetailModal({ donation, onClose }) {
     }
   };
 
+  // Função para mostrar distância se existir
+  const renderDistance = () => {
+    if (donation.distance !== undefined && donation.distance !== Infinity) {
+      return (
+        <span style={styles.distance}>
+          {Number(donation.distance).toFixed(2)} km de distância
+        </span>
+      );
+    }
+    return null;
+  };
+
   return (
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.card} onClick={(e) => e.stopPropagation()}>
@@ -151,13 +202,12 @@ export default function DonationDetailModal({ donation, onClose }) {
 
         <div style={styles.content}>
           <p style={styles.description}>{donation.description}</p>
-
           {donation.location && (
             <p style={styles.field}>
               <strong>Localização:</strong> {donation.location}
             </p>
           )}
-
+          {renderDistance()}
           {Object.entries(donation)
             .filter(
               ([k]) =>
@@ -173,6 +223,7 @@ export default function DonationDetailModal({ donation, onClose }) {
                   "donationType",
                   "userId",
                   "location",
+                  "distance",
                 ].includes(k)
             )
             .map(([k, v]) => (
@@ -196,7 +247,7 @@ export default function DonationDetailModal({ donation, onClose }) {
               style={styles.avatar}
               onClick={() => navigate(`/profile/${donation.userId}`)}
             />
-            <div>
+            <div style={styles.creatorInfo}>
               <p
                 style={styles.creatorName}
                 onClick={() => navigate(`/profile/${donation.userId}`)}
@@ -205,7 +256,7 @@ export default function DonationDetailModal({ donation, onClose }) {
               </p>
               <p style={styles.creatorRating}>
                 {creatorRating != null
-                  ? `Avaliação: ${creatorRating}`
+                  ? `Avaliação: ${Number(creatorRating).toFixed(2)}`
                   : "Sem avaliação"}
               </p>
             </div>
@@ -223,6 +274,11 @@ export default function DonationDetailModal({ donation, onClose }) {
         >
           {requested ? "Solicitação enviada" : "Quero esta doação"}
         </button>
+        {!isPremium && (
+          <div style={{ marginTop: 10, color: "#888", fontSize: 13, textAlign: "center" }}>
+            Limite de solicitações para contas gratuitas: {MAX_REQUESTS}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -240,86 +296,179 @@ const styles = {
   },
   card: {
     background: "#fff",
-    borderRadius: 8,
-    width: "90%",
-    maxWidth: 500,
-    maxHeight: "90%",
+    borderRadius: 12,
+    width: "95%",
+    maxWidth: 480,
+    maxHeight: "92vh",
     overflowY: "auto",
-    padding: 20,
+    padding: 24,
     position: "relative",
+    boxShadow: "0 8px 32px rgba(40,167,69,0.13)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
   },
   header: {
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
+    width: "100%",
+    position: "relative",
   },
-  title: { margin: 0, fontSize: 20, color: "#333" },
+  title: {
+    margin: 0,
+    fontSize: 22,
+    color: "#28a745",
+    fontWeight: "bold",
+    flex: 1,
+    textAlign: "center",
+    letterSpacing: 0.5,
+  },
   closeBtn: {
     background: "none",
     border: "none",
-    fontSize: 24,
+    fontSize: 28,
     cursor: "pointer",
     color: "#888",
+    position: "absolute",
+    right: 0,
+    top: 0,
+    lineHeight: 1,
   },
-  imageWrapper: { position: "relative", textAlign: "center", marginBottom: 15 },
-  image: { width: "100%", borderRadius: 8, maxHeight: 250, objectFit: "cover" },
+  imageWrapper: {
+    position: "relative",
+    width: "100%",
+    marginBottom: 18,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 180,
+  },
+  image: {
+    width: "100%",
+    maxWidth: 350,
+    height: "auto",
+    maxHeight: 260,
+    borderRadius: 10,
+    objectFit: "contain",
+    background: "#fafbfc",
+    boxShadow: "0 2px 12px rgba(40,167,69,0.08)",
+  },
   placeholder: {
     width: "100%",
-    height: 250,
+    minHeight: 180,
     background: "#f0f0f0",
-    borderRadius: 8,
+    borderRadius: 10,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     color: "#999",
+    fontSize: 16,
   },
   badges: {
     position: "absolute",
-    top: 10,
-    left: 10,
+    top: 12,
+    left: 12,
     display: "flex",
     flexDirection: "column",
-    gap: 6,
+    gap: 7,
+    zIndex: 2,
   },
   badge: {
-    padding: "4px 8px",
-    borderRadius: 4,
-    fontSize: 12,
+    padding: "4px 10px",
+    borderRadius: 5,
+    fontSize: 13,
     color: "#fff",
+    fontWeight: "bold",
+    boxShadow: "0 1px 4px rgba(40,167,69,0.10)",
+    textTransform: "capitalize",
+    letterSpacing: 0.2,
   },
   statusBadge: { backgroundColor: "#168723" },
   typeBadge: { backgroundColor: "#007bff" },
-  content: { marginBottom: 20 },
-  description: { color: "#555", lineHeight: 1.4, marginBottom: 10 },
-  field: { marginBottom: 6, color: "#444" },
-  timestamp: { fontSize: 12, color: "#999", marginTop: 10 },
+  content: {
+    marginBottom: 18,
+    width: "100%",
+    textAlign: "center",
+  },
+  description: {
+    color: "#444",
+    lineHeight: 1.5,
+    marginBottom: 12,
+    fontSize: 16,
+    fontWeight: 500,
+  },
+  field: {
+    marginBottom: 7,
+    color: "#555",
+    fontSize: 15,
+    textAlign: "center",
+  },
+  timestamp: {
+    fontSize: 13,
+    color: "#999",
+    marginTop: 10,
+    textAlign: "center",
+  },
+  distance: {
+    display: "block",
+    color: "#007bff",
+    fontWeight: "bold",
+    fontSize: 14,
+    marginBottom: 8,
+    textAlign: "center",
+  },
   creator: {
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 22,
+    width: "100%",
   },
   avatar: {
-    width: 50,
-    height: 50,
+    width: 62,
+    height: 62,
     borderRadius: "50%",
     objectFit: "cover",
     cursor: "pointer",
+    border: "2px solid #28a745",
+    marginBottom: 4,
+    boxShadow: "0 2px 8px rgba(40,167,69,0.10)",
+  },
+  creatorInfo: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
   },
   creatorName: {
     margin: 0,
     fontWeight: "bold",
     color: "#007bff",
     cursor: "pointer",
+    fontSize: 16,
+    textAlign: "center",
+    wordBreak: "break-word",
   },
-  creatorRating: { margin: 0, color: "#666", fontSize: 14 },
+  creatorRating: {
+    margin: 0,
+    color: "#666",
+    fontSize: 14,
+    textAlign: "center",
+  },
   button: {
     width: "100%",
-    padding: "12px 0",
-    fontSize: 16,
+    padding: "14px 0",
+    fontSize: 17,
     border: "none",
-    borderRadius: 5,
+    borderRadius: 6,
     color: "#fff",
+    fontWeight: "bold",
+    marginTop: 8,
+    marginBottom: 2,
+    transition: "background 0.2s, box-shadow 0.2s",
+    boxShadow: "0 2px 8px rgba(40,167,69,0.10)",
   },
 };

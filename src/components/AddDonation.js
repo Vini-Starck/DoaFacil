@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { db, auth, storage } from "../config/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { getDoc, doc, addDoc, collection, serverTimestamp, query, where, getCountFromServer } from "firebase/firestore";
+
 import { ref, uploadBytes } from "firebase/storage";
 import CustomPlacesAutocomplete from "./CustomPlacesAutocomplete";
 import AdSense from './AdSense';
@@ -14,6 +15,7 @@ const AddDonation = () => {
   const [description, setDescription] = useState("");
   const [fileUpload, setFileUpload] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
 
   // Localização unificada
   const [locationText, setLocationText] = useState("");
@@ -136,6 +138,18 @@ const AddDonation = () => {
   const handleDescriptionChange = (e) =>
     e.target.value.length <= 500 && setDescription(e.target.value);
 
+  // Limitador de doações
+  const MAX_DONATIONS = 5;
+
+  useEffect(() => {
+    async function fetchUser() {
+      if (!auth.currentUser) return;
+      const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
+      if (snap.exists()) setIsPremium(!!snap.data().isPremium);
+    }
+    fetchUser();
+  }, []);
+
   // Envio
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -157,6 +171,18 @@ const AddDonation = () => {
       const extraObj = {};
       fields.forEach(({ name, value }) => name && value && (extraObj[name] = value));
       const finalType = donationType === "Outros" ? customType : donationType;
+
+      if (!isPremium) {
+        const q = query(
+          collection(db, "donationItems"),
+          where("userId", "==", auth.currentUser.uid)
+        );
+        const snapshot = await getCountFromServer(q);
+        if (snapshot.data().count >= MAX_DONATIONS) {
+          alert("Você atingiu o limite de doações cadastradas.");
+          return;
+        }
+      }
 
       await addDoc(collection(db, "donationItems"), {
         title,

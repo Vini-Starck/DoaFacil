@@ -1,4 +1,3 @@
-// src/components/Profile.js
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
@@ -8,6 +7,9 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { deleteUserAndDonations } from "../utils/userUtils";
 import AdSense from './AdSense';
+import logo from "../icons/logo.png";
+import logoText from "../icons/logoEscrito.png";
+import defaultProfilePic from "../icons/default-profile.png";
 
 const Profile = () => {
   const { uid } = useParams();
@@ -105,44 +107,48 @@ const Profile = () => {
     }
   };
 
+  // Efeitos de hover para os botões
+  const handleHover = (e) => e.target.style.opacity = 0.85;
+  const handleLeave = (e) => e.target.style.opacity = 1;
+
   return (
-    <div>
-
-    {/* AdSense acima do cartão */}
-    <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
-      <AdSense
-        adSlot="4451812486"
-        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-      />
-    </div>
-    <div style={styles.card}>
-      {userData ? (
-        <>
-          <div onClick={onPhotoClick} style={{ position: "relative" }}>
-            <img
-              src={photoURL || "/icons/default-profile.png"}
-              alt="Perfil"
-              style={styles.avatar}
-            />
-            {isOwnProfile && (
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={onPhotoChange}
-                accept="image/*"
+    <div style={styles.page}>
+      {/* AdSense acima do cartão */}
+      <div style={{ marginBottom: 24 }}>
+        <AdSense
+          adSlot="4451812486"
+          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+        />
+      </div>
+      <div style={styles.container}>
+        {/* Logo e nome do app */}
+        <div style={styles.logoBox}>
+          <img src={logo} alt="Logo DoaFácil" style={styles.logoImg} />
+          <img src={logoText} alt="Texto DoaFácil" style={styles.logoTextImg} />
+        </div>
+        <h2 style={styles.title}>Perfil</h2>
+        {userData ? (
+          <>
+            <div onClick={onPhotoClick} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <img
+                src={photoURL || defaultProfilePic}
+                alt="Perfil"
+                style={styles.avatar}
               />
-            )}
-          </div>
-
-          <h2 style={styles.name}>{userData.displayName || userData.email}</h2>
-          <p style={styles.email}>{userData.email}</p>
-          <p style={styles.rating}>
-            {rating != null ? `Avaliação: ${rating.toFixed(1)}` : "Sem avaliação"}
-          </p>
-
-          {isOwnProfile ? (
-            <div style={styles.actions}>
+              {isOwnProfile && (
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  onChange={onPhotoChange}
+                  accept="image/*"
+                />
+              )}
+              {isOwnProfile && (
+                <span style={styles.editPhotoHint}>Clique na foto para alterar</span>
+              )}
+            </div>
+            <div style={styles.profileInfo}>
               {editing ? (
                 <>
                   <input
@@ -151,73 +157,157 @@ const Profile = () => {
                     style={styles.input}
                     maxLength={50}
                   />
-                  <button onClick={saveProfile} style={{ ...styles.btn, ...styles.primary }}>
+                  <button
+                    onClick={saveProfile}
+                    style={{ ...styles.button, ...styles.primary }}
+                    onMouseEnter={handleHover}
+                    onMouseLeave={handleLeave}
+                  >
                     Salvar
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => setEditing(true)}
-                  style={{ ...styles.btn, ...styles.secondary }}
-                >
-                  Editar Nome
-                </button>
+                <h3 style={styles.name}>{userData.displayName || userData.email}</h3>
               )}
-              <button onClick={() => navigate("/my-donations")} style={styles.btn}>
+              <p style={styles.email}>{userData.email}</p>
+              <p style={styles.rating}>
+                {rating != null ? `Avaliação: ${rating.toFixed(1)}` : "Sem avaliação"}
+              </p>
+            </div>
+            {isOwnProfile && !editing && (
+              <button
+                onClick={() => setEditing(true)}
+                style={{ ...styles.button, ...styles.secondary }}
+                onMouseEnter={handleHover}
+                onMouseLeave={handleLeave}
+              >
+                Editar Nome
+              </button>
+            )}
+            <div style={styles.actions}>
+              <button
+                onClick={() => navigate("/my-donations")}
+                style={styles.button}
+                onMouseEnter={handleHover}
+                onMouseLeave={handleLeave}
+              >
                 Minhas Doações
               </button>
-              <button onClick={() => navigate("/chat")} style={{ ...styles.btn, ...styles.primary }}>
+              <button
+                onClick={() => navigate("/chat")}
+                style={{ ...styles.button, ...styles.primary }}
+                onMouseEnter={handleHover}
+                onMouseLeave={handleLeave}
+              >
                 Chats
               </button>
-              <button onClick={handleLogout} style={{ ...styles.btn, ...styles.danger }}>
+              <button
+                onClick={handleLogout}
+                style={{ ...styles.button, ...styles.danger }}
+                onMouseEnter={handleHover}
+                onMouseLeave={handleLeave}
+              >
                 Sair
               </button>
-              <button onClick={handleDeleteAccount} style={{ ...styles.btn, ...styles.danger }}>
+              <button
+                onClick={handleDeleteAccount}
+                style={{ ...styles.button, ...styles.danger }}
+                onMouseEnter={handleHover}
+                onMouseLeave={handleLeave}
+              >
                 Excluir Conta
               </button>
             </div>
-          ) : (
-            // Removido o botão de mensagem quando não for próprio perfil
-            null
-          )}
-        </>
-      ) : (
-        <p>Carregando perfil...</p>
-      )}
-    </div>
-    {/* AdSense abaixo do cartão */}
-    <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
-      <AdSense
-        adSlot="4451812486"
-        style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-      />
-    </div>
+          </>
+        ) : (
+          <p>Carregando perfil...</p>
+        )}
+      </div>
+      {/* AdSense abaixo do cartão */}
+      <div style={{ marginTop: 24 }}>
+        <AdSense
+          adSlot="4451812486"
+          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
+        />
+      </div>
     </div>
   );
 };
 
 const styles = {
-  card: {
-    maxWidth: 400,
-    margin: "40px auto",
-    padding: 20,
+  page: {
+    background: "linear-gradient(135deg, #28a745, #007bff)",
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "20px",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+  },
+  container: {
+    maxWidth: "400px",
+    width: "100%",
     background: "#fff",
-    borderRadius: 10,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    borderRadius: "12px",
+    boxShadow: "0 8px 32px rgba(40, 167, 69, 0.10), 0 1.5px 8px rgba(0,0,0,0.08)",
+    padding: "36px 24px 28px 24px",
     textAlign: "center",
+    position: "relative",
+  },
+  logoBox: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  logoImg: {
+    width: 64,
+    height: 64,
+    marginBottom: 6,
+    boxShadow: "0 2px 12px rgba(40,167,69,0.10)",
+    borderRadius: 16,
+    background: "#fff"
+  },
+  appName: {
+    fontWeight: "bold",
+    fontSize: 28,
+    color: "#28a745",
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  title: {
+    marginBottom: "18px",
+    color: "#222",
+    fontSize: "24px",
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: "50%",
     objectFit: "cover",
-    marginBottom: 16,
+    marginBottom: 8,
     cursor: "pointer",
+    border: "3px solid #28a745",
+    boxShadow: "0 2px 8px rgba(40,167,69,0.10)",
+    background: "#fafbfc"
+  },
+  editPhotoHint: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  profileInfo: {
+    marginBottom: 10,
   },
   name: {
-    margin: "0 0 8px",
-    fontSize: 24,
+    margin: "10px 0 4px",
+    fontSize: 22,
     color: "#333",
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   email: {
     margin: "0 0 8px",
@@ -236,25 +326,39 @@ const styles = {
     marginTop: 16,
   },
   input: {
-    padding: 8,
+    padding: 10,
     fontSize: 16,
     borderRadius: 6,
-    border: "1px solid #ccc",
-    width: "70%",
-    margin: "0 auto",
+    border: "1.5px solid #e0e0e0",
+    width: "100%",
+    marginBottom: 8,
+    background: "#fafbfc",
+    boxSizing: "border-box",
+    outline: "none",
+    transition: "border 0.2s",
   },
-  btn: {
-    padding: "10px 16px",
+  button: {
+    width: "100%",
+    padding: "13px",
+    borderRadius: "6px",
     border: "none",
-    borderRadius: 6,
+    fontSize: "16px",
     cursor: "pointer",
-    transition: "opacity 0.2s",
-    backgroundColor: "#6c757d",
+    transition: "opacity 0.2s, box-shadow 0.2s",
+    fontWeight: "bold",
+    marginTop: 6,
+    boxShadow: "0 2px 8px rgba(40,167,69,0.08)",
+    background: "#6c757d",
     color: "#fff",
   },
-  primary: { backgroundColor: "#007bff" },
-  secondary: { backgroundColor: "#28a745" },
-  danger: { backgroundColor: "#dc3545" },
+  primary: { background: "linear-gradient(90deg, #28a745 60%, #007bff 100%)", color: "#fff" },
+  secondary: { backgroundColor: "#28a745", color: "#fff" },
+  danger: { backgroundColor: "#dc3545", color: "#fff" },
+  logoTextImg: {
+    height: 30,   // ou ajuste conforme o tamanho ideal
+    marginLeft: 8, 
+    resizeMode: 'contain'
+  }
 };
 
 export default Profile;
