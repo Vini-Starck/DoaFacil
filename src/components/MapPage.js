@@ -14,7 +14,7 @@ import DonationDetailModal from "./DonationDetailModal";
 const containerStyle = { width: "100%", height: "100vh" };
 const LIBRARIES = ["places"];
 
-export default function MapPage() {
+export default function MapPage({ reportedDonationIds = [], onReport }) {
   const { currentUser } = useAuth();
   const [donations, setDonations] = useState([]);
   const [currentPosition, setCurrentPosition] = useState(null);
@@ -33,6 +33,10 @@ export default function MapPage() {
       console.error
     );
   }, []);
+
+  const donationsToRender = donations.filter(
+    (d) => !reportedDonationIds.includes(d.id)
+  );
 
   // 2) Fetch + getDownloadURL + filtro de status e userId
   useEffect(() => {
@@ -77,6 +81,8 @@ export default function MapPage() {
     })().catch(console.error);
   }, [currentUser]);
 
+
+  
   if (loadError) return <p>Erro ao carregar o mapa.</p>;
   if (!isLoaded || !currentPosition) return <p>Carregando mapa…</p>;
 
@@ -87,10 +93,7 @@ export default function MapPage() {
         center={currentPosition}
         zoom={13}
       >
-        {/* Marcador do usuário omitido */}
-
-        {/* Apenas doações filtradas */}
-        {donations.map((d) => (
+        {donationsToRender.map((d) => (
           <OverlayView
             key={d.id}
             position={{ lat: d.latitude, lng: d.longitude }}
@@ -129,6 +132,10 @@ export default function MapPage() {
         <DonationDetailModal
           donation={selectedDonation}
           onClose={() => setSelectedDonation(null)}
+          onReport={(id) => {
+            onReport(id);
+            setSelectedDonation(null); // fecha modal após denunciar
+          }}
         />
       )}
     </>

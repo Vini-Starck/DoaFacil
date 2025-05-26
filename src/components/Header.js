@@ -10,6 +10,7 @@ import Logo_Doa_Facil from "../icons/Logo_Doa_Facil.png";
 import defaultProfilePic from "../icons/default-profile.png"; // Adicione o caminho correto para a imagem padrão
 
 const navItems = [
+  { name: "Como usar", path: "/como-usar" },
   { name: "Doações", path: "/donations" },
   { name: "Doar", path: "/add-donation" },
   { name: "Chat", path: "/chat" },

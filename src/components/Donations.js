@@ -22,7 +22,7 @@ const kmRanges = [
   { value: 100, label: "Até 100 km" },
 ];
 
-const Donations = ({ onDonationClick }) => {
+const Donations = ({ onDonationClick, reportedDonationIds }) => {
   const { currentUser } = useAuth();
   const [donations, setDonations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,6 +32,25 @@ const Donations = ({ onDonationClick }) => {
   const [kmRange, setKmRange] = useState(0);
   const [hoveredId, setHoveredId] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+  const [hiddenDonations, setHiddenDonations] = useState([]);
+
+  // Fetch hidden donations
+  useEffect(() => {
+    const fetchHiddenDonations = async () => {
+      if (!currentUser) return;
+      try {
+        const snap = await getDocs(
+          collection(db, "users", currentUser.uid, "hiddenDonations")
+        );
+        const hiddenIds = snap.docs.map((docSnap) => docSnap.id);
+        setHiddenDonations(hiddenIds);
+      } catch (error) {
+        console.error("Erro ao buscar doações ocultadas:", error);
+      }
+    };
+
+    fetchHiddenDonations();
+  }, [currentUser]);
 
   // Fetch donations + resolve image URLs
   useEffect(() => {
@@ -60,6 +79,8 @@ const Donations = ({ onDonationClick }) => {
     };
 
     fetchDonations();
+
+
   }, []);
 
   // Get user location if filtering nearest
@@ -103,10 +124,12 @@ const Donations = ({ onDonationClick }) => {
     const cityMatch = cityTerm
       ? (donation.location || "").toLowerCase().includes(cityTerm)
       : true;
+    const notHidden = !hiddenDonations.includes(donation.id); // Exclude hidden donations
     return (
       (titleMatch || descMatch) &&
       typeMatch &&
       cityMatch &&
+      notHidden &&
       donation.status === "disponível" &&
       donation.userId !== currentUser?.uid
     );
@@ -133,9 +156,14 @@ const Donations = ({ onDonationClick }) => {
       .sort((a, b) => a.distance - b.distance);
   }
 
+  const donationsToRender = filteredDonations.filter(
+    (donation) => !reportedDonationIds.includes(donation.id)
+  );
 
   return (
     <section style={styles.page}>
+
+
       {/* AdSense acima dos filtros/lista */}
       <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
         <AdSense
@@ -143,6 +171,8 @@ const Donations = ({ onDonationClick }) => {
           style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
         />
       </div>
+
+
       <div style={styles.container}>
         <h1 style={styles.title}>Doações Disponíveis</h1>
         <div style={styles.filtersBar}>
@@ -188,55 +218,58 @@ const Donations = ({ onDonationClick }) => {
             <span>Mais próximas</span>
           </label>
         </div>
-        {filteredDonations.length ? (
-          <div style={styles.grid}>
-            {filteredDonations.map((donation) => {
-              const isHovered = hoveredId === donation.id;
-              return (
-                <div
-                  key={donation.id}
-                  style={{
-                    ...styles.card,
-                    ...(isHovered ? styles.cardHover : {})
-                  }}
-                  onClick={() => onDonationClick(donation)}
-                  onMouseEnter={() => setHoveredId(donation.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  title={donation.title}
-                >
-                  {donation.imageUrl ? (
-                    <img
-                      src={donation.imageUrl}
-                      alt="Imagem do item"
-                      style={styles.cardImage}
-                    />
-                  ) : (
-                    <div style={styles.noImage}>Sem imagem</div>
-                  )}
-                  <div style={styles.cardContent}>
-                    <h2 style={styles.cardTitle}>{donation.title}</h2>
-                    <p style={styles.cardDesc}>{donation.description}</p>
-                    <div style={styles.cardMeta}>
-                      <span style={styles.cardType}>{donation.donationType}</span>
-                      {donation.city && (
-                        <span style={styles.cardCity}>{donation.city}</span>
-                      )}
-                      {(filterNearest || kmRange > 0) && donation.distance !== undefined && (
-                        <span style={styles.cardDistance}>
-                          {donation.distance !== Infinity
-                            ? `${donation.distance.toFixed(1)} km`
-                            : "Distância desconhecida"}
-                        </span>
-                      )}
-                    </div>
+
+        
+        {donationsToRender.length ? (
+        <div style={styles.grid}>
+          {donationsToRender.map((donation) => {
+            const isHovered = hoveredId === donation.id;
+            return (
+              <div
+                key={donation.id}
+                style={{
+                  ...styles.card,
+                  ...(isHovered ? styles.cardHover : {})
+                }}
+                onClick={() => onDonationClick(donation)}
+                onMouseEnter={() => setHoveredId(donation.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                title={donation.title}
+              >
+                {donation.imageUrl ? (
+                  <img
+                    src={donation.imageUrl}
+                    alt="Imagem do item"
+                    style={styles.cardImage}
+                  />
+                ) : (
+                  <div style={styles.noImage}>Sem imagem</div>
+                )}
+                <div style={styles.cardContent}>
+                  <h2 style={styles.cardTitle}>{donation.title}</h2>
+                  <p style={styles.cardDesc}>{donation.description}</p>
+                  <div style={styles.cardMeta}>
+                    <span style={styles.cardType}>{donation.donationType}</span>
+                    {donation.city && (
+                      <span style={styles.cardCity}>{donation.city}</span>
+                    )}
+                    {(filterNearest || kmRange > 0) && donation.distance !== undefined && (
+                      <span style={styles.cardDistance}>
+                        {donation.distance !== Infinity
+                          ? `${donation.distance.toFixed(1)} km`
+                          : "Distância desconhecida"}
+                      </span>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p style={styles.noResults}>Nenhuma doação encontrada.</p>
-        )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p style={styles.noResults}>Nenhuma doação encontrada.</p>
+      )}
+
       </div>
       {/* AdSense abaixo da lista */}
       <div style={{ margin: "24px auto 0", maxWidth: 320 }}>

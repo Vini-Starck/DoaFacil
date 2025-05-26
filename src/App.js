@@ -14,22 +14,30 @@ import AddDonation from "./components/AddDonation";
 import MapPage from "./components/MapPage";
 import ChatPage from "./components/ChatPage";
 import NotificationsPage from "./components/NotificationsPage";
-import ContactProfilePage from "./components/Contact";
 import Donations from "./components/Donations";
 import DonationDetailModal from "./components/DonationDetailModal";
 import MyDonations from "./components/MyDonations";
 import PrivateRoute from "./components/PrivateRoute";
 import EditDonation from "./components/EditDonation";
 import SupportPage from "./components/SupportPage";
+import TermsOfUse from "./components/TermoDeUso";
+import CheckEmail from "./components/CheckEmail";
+import ComoUsar from "./components/ComoUsar";
 
 
 function App() {
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [reportedDonationIds, setReportedDonationIds] = useState([]);
 
   const handleDonationClick = (donation) => {
     setSelectedDonation(donation);
     setShowModal(true);
+  };
+
+  // Callback para quando uma doação é denunciada
+  const handleDonationReport = (id) => {
+    setReportedDonationIds((prev) => [...prev, id]);
   };
 
   return (
@@ -52,7 +60,12 @@ function App() {
             path="/donations"
             element={
               <PrivateRoute
-                element={<Donations onDonationClick={handleDonationClick} />}
+                element={
+                  <Donations
+                    onDonationClick={handleDonationClick}
+                    reportedDonationIds={reportedDonationIds}
+                  />
+                }
               />
             }
           />
@@ -60,14 +73,25 @@ function App() {
           <Route path="/add-donation" element={<PrivateRoute element={<AddDonation />} />} />
           <Route path="/my-donations" element={<PrivateRoute element={<MyDonations />} />} />
           <Route path="/chat/:chatId?" element={<PrivateRoute element={<ChatPage />} />} />
-          <Route path="/map" element={<PrivateRoute element={<MapPage />} />} />
+          <Route
+            path="/map"
+            element={
+              <PrivateRoute
+                element={
+                  <MapPage
+                    reportedDonationIds={reportedDonationIds}
+                    onReport={handleDonationReport}
+                  />
+                }
+              />
+            }
+          />
           <Route path="/notifications" element={<PrivateRoute element={<NotificationsPage />} />} />
           <Route path="/edit-donation/:id" element={<PrivateRoute element={<EditDonation />} />} />
           <Route path="/support" element={<PrivateRoute element={<SupportPage />} />} />
-          <Route
-            path="/contact/:userId/:donationId"
-            element={<PrivateRoute element={<ContactProfilePage />} />}
-          />
+          <Route path="/terms" element={ <TermsOfUse/>} />
+          <Route path="/check-email" element={ <CheckEmail/>} />
+          <Route path="/como-usar" element={ <ComoUsar/>} />
         </Routes>
       </main>
       <Footer />
@@ -75,6 +99,7 @@ function App() {
         <DonationDetailModal
           donation={selectedDonation}
           onClose={() => setShowModal(false)}
+          onReport={handleDonationReport}  // Passa a callback para o modal
         />
       )}
     </div>

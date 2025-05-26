@@ -10,9 +10,13 @@ import {
   query,
   where,
   getDocs,
+  setDoc,
+  updateDoc,
+  increment,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
+import defaultProfile from "../icons/default-profile.png";
 
 const getRelativeTime = (date) => {
   const now = new Date();
@@ -25,13 +29,14 @@ const getRelativeTime = (date) => {
   return `${days} dias atrás`;
 };
 
-export default function DonationDetailModal({ donation, onClose }) {
+export default function DonationDetailModal({ donation, onClose, onReport }) {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [creator, setCreator] = useState(null);
   const [creatorRating, setCreatorRating] = useState(null);
   const [requested, setRequested] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [reported, setReported] = useState(false);
 
   // Carrega dados do criador
   useEffect(() => {
@@ -64,6 +69,21 @@ export default function DonationDetailModal({ donation, onClose }) {
     fetchUserPremium();
   }, [currentUser]);
 
+  // Verifica se o usuário já denunciou esta doação
+  useEffect(() => {
+    async function checkReported() {
+      if (!currentUser) return;
+      try {
+        const reportRef = doc(db, "users", currentUser.uid, "hiddenDonations", donation.id);
+        const snap = await getDoc(reportRef);
+        if (snap.exists()) setReported(true);
+      } catch (err) {
+        setReported(false);
+      }
+    }
+    checkReported();
+  }, [currentUser, donation.id]);
+
   // Verifica se já existe solicitação para esta doação
   useEffect(() => {
     if (!currentUser) return;
@@ -91,11 +111,16 @@ export default function DonationDetailModal({ donation, onClose }) {
 
   // Envia notificação de solicitação
   const handleRequest = async () => {
-    if (!currentUser) return onClose();
+    if (!currentUser) {
+      alert("Você precisa estar logado para solicitar a doação.");
+      return;
+    }
     if (currentUser.uid === donation.userId) {
       alert("Você é o criador desta doação.");
       return;
     }
+
+    
 
     // Só aplica limite se NÃO for premium
     if (!isPremium) {
@@ -156,6 +181,37 @@ export default function DonationDetailModal({ donation, onClose }) {
     }
   };
 
+  // Função para denunciar e ocultar a doação
+  const handleReport = async () => {
+    if (!currentUser) return;
+    try {
+      // Adiciona ou atualiza a denúncia do usuário com merge
+      await setDoc(
+        doc(db, "users", currentUser.uid, "hiddenDonations", donation.id),
+        {
+          reportedAt: serverTimestamp(),
+          donationId: donation.id,
+        },
+        { merge: true } // evita erro se já existir
+      );
+
+      // Incrementa o contador de denúncias no documento da doação
+      const donationRef = doc(db, "donationItems", donation.id);
+      await updateDoc(donationRef, {
+        reportCount: increment(1),
+      });
+
+      setReported(true);
+      // Atualiza o estado no componente pai para remover a doação em tempo real
+      onReport && onReport(donation.id);
+      alert("Doação denunciada e ocultada para você.");
+      onClose();
+    } catch (err) {
+      console.error("Erro ao denunciar doação:", err);
+      alert("Erro ao denunciar a doação. Tente novamente.");
+    }
+  };
+
   // Função para mostrar distância se existir
   const renderDistance = () => {
     if (donation.distance !== undefined && donation.distance !== Infinity) {
@@ -173,7 +229,7 @@ export default function DonationDetailModal({ donation, onClose }) {
       <div style={styles.card} onClick={(e) => e.stopPropagation()}>
         <header style={styles.header}>
           <h2 style={styles.title}>{donation.title}</h2>
-          <button style={styles.closeBtn} onClick={onClose}>×</button>
+          <button style={styles.closeBtn} onClick={onClose} aria-label="Fechar modal">×</button>
         </header>
 
         <div style={styles.imageWrapper}>
@@ -242,7 +298,7 @@ export default function DonationDetailModal({ donation, onClose }) {
         {creator && (
           <div style={styles.creator}>
             <img
-              src={creator.photoURL || "/icons/default-profile.png"}
+              src={creator.photoURL || defaultProfile}
               alt="Criador"
               style={styles.avatar}
               onClick={() => navigate(`/profile/${donation.userId}`)}
@@ -277,6 +333,25 @@ export default function DonationDetailModal({ donation, onClose }) {
         {!isPremium && (
           <div style={{ marginTop: 10, color: "#888", fontSize: 13, textAlign: "center" }}>
             Limite de solicitações para contas gratuitas: {MAX_REQUESTS}
+          </div>
+        )}
+
+        
+        {/* Botão de denúncia */}
+        {!reported ? (
+          <button
+            style={{
+              ...styles.button,
+              backgroundColor: "#dc3545",
+              marginTop: 16,
+            }}
+            onClick={handleReport}
+          >
+            Denunciar e ocultar esta doação
+          </button>
+        ) : (
+          <div style={{ color: "#dc3545", marginTop: 16, textAlign: "center" }}>
+            Você já denunciou esta doação.
           </div>
         )}
       </div>
