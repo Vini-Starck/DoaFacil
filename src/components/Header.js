@@ -7,9 +7,10 @@ import { useAuth } from "../AuthContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
 import Logo_Doa_Facil from "../icons/Logo_Doa_Facil.png";
-import defaultProfilePic from "../icons/default-profile.png"; // Adicione o caminho correto para a imagem padrão
+import defaultProfilePic from "../icons/default-profile.png";
 
 const navItems = [
+  { name: "Dashboard", path: "/dashboard" },
   { name: "Como usar", path: "/como-usar" },
   { name: "Doações", path: "/donations" },
   { name: "Doar", path: "/add-donation" },
@@ -28,6 +29,7 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Detecta se estamos em mobile (< 768px)
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     onResize();
@@ -35,6 +37,7 @@ const Header = () => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Contador de notificações
   useEffect(() => {
     if (!currentUser) return;
     const q = query(
@@ -47,36 +50,57 @@ const Header = () => {
 
   const handleProfileClick = e => setAnchorEl(e.currentTarget);
   const handleProfileClose = () => setAnchorEl(null);
-
   const toggleMenu = () => setMenuOpen(o => !o);
 
-  const renderNavList = () => (
-  <ul style={styles.navList}>
-    {navItems.map((item, idx) => (
-      <li
-        key={idx}
-        style={styles.navItem}
-        onMouseEnter={() => setHoverNav(idx)}
-        onMouseLeave={() => setHoverNav(null)}
-      >
-        <Link
-          to={item.path}
-          style={{
+  // Renderiza a lista de navegação com estilo condicional
+  const renderNavList = () => {
+    const listStyle = isMobile ? styles.mobileNavList : styles.navList;
+    return (
+      <ul style={listStyle}>
+        {navItems.map((item, idx) => {
+          // estilo base do link
+          const baseLinkStyle = {
             ...styles.navLink,
-            background: hoverNav === idx
-              ? "linear-gradient(90deg, #28a745 60%, #007bff 100%)"
-              : "transparent",
+            background:
+              hoverNav === idx
+                ? "linear-gradient(90deg, #28a745 60%, #007bff 100%)"
+                : "transparent",
             color: hoverNav === idx ? "#fff" : "#222",
             transform: hoverNav === idx ? "scale(1.08)" : "scale(1)",
-            boxShadow: hoverNav === idx ? "0 2px 8px rgba(40,167,69,0.10)" : "none",
-          }}
-        >
-          {item.name}
-        </Link>
-      </li>
-    ))}
-  </ul>
-);
+            boxShadow:
+              hoverNav === idx
+                ? "0 2px 8px rgba(40,167,69,0.10)"
+                : "none",
+          };
+
+          // overrides para mobile
+          const mobileLinkStyle = isMobile
+            ? {
+                ...baseLinkStyle,
+                display: "block",
+                width: "100%",
+                padding: "12px 16px",
+                borderRadius: 0,
+                textAlign: "center",
+              }
+            : baseLinkStyle;
+
+          return (
+            <li
+              key={idx}
+              style={styles.navItem}
+              onMouseEnter={() => setHoverNav(idx)}
+              onMouseLeave={() => setHoverNav(null)}
+            >
+              <Link to={item.path} style={mobileLinkStyle}>
+                {item.name}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   return (
     <header style={styles.header}>
@@ -87,7 +111,6 @@ const Header = () => {
           alt="DoaFácil Logo"
           style={styles.logoImage}
         />
-        
       </Link>
 
       {/* Nav ou Hamburger */}
@@ -101,7 +124,7 @@ const Header = () => {
         <nav>{renderNavList()}</nav>
       )}
 
-      {/* Áreas à direita */}
+      {/* Área direita: notificações + perfil ou botões de auth */}
       <div style={styles.rightSection}>
         {currentUser ? (
           <>
@@ -127,9 +150,7 @@ const Header = () => {
             </Link>
             <div style={styles.profileWrapper}>
               <img
-                src={
-                  currentUser.photoURL || defaultProfilePic
-                }
+                src={currentUser.photoURL || defaultProfilePic}
                 alt="Perfil"
                 style={{
                   ...styles.profileImage,
@@ -151,41 +172,46 @@ const Header = () => {
           </>
         ) : (
           <div style={styles.authButtons}>
-  <Link
-    to="/login"
-    style={{
-      ...styles.authLink,
-      opacity: hoverNav === 'login' ? 0.85 : 1,
-      transform: hoverNav === 'login' ? "scale(1.06)" : "scale(1)",
-      boxShadow: hoverNav === 'login' ? "0 4px 16px rgba(40,167,69,0.15)" : styles.authLink.boxShadow,
-    }}
-    onMouseEnter={() => setHoverNav('login')}
-    onMouseLeave={() => setHoverNav(null)}
-  >
-    Logar
-  </Link>
-  <Link
-    to="/register"
-    style={{
-      ...styles.authLink,
-      opacity: hoverNav === 'register' ? 0.85 : 1,
-      transform: hoverNav === 'register' ? "scale(1.06)" : "scale(1)",
-      boxShadow: hoverNav === 'register' ? "0 4px 16px rgba(40,167,69,0.15)" : styles.authLink.boxShadow,
-    }}
-    onMouseEnter={() => setHoverNav('register')}
-    onMouseLeave={() => setHoverNav(null)}
-  >
-    Criar Conta
-  </Link>
-</div>
+            <Link
+              to="/login"
+              style={{
+                ...styles.authLink,
+                opacity: hoverNav === "login" ? 0.85 : 1,
+                transform: hoverNav === "login" ? "scale(1.06)" : "scale(1)",
+                boxShadow:
+                  hoverNav === "login"
+                    ? "0 4px 16px rgba(40,167,69,0.15)"
+                    : styles.authLink.boxShadow,
+              }}
+              onMouseEnter={() => setHoverNav("login")}
+              onMouseLeave={() => setHoverNav(null)}
+            >
+              Logar
+            </Link>
+            <Link
+              to="/register"
+              style={{
+                ...styles.authLink,
+                opacity: hoverNav === "register" ? 0.85 : 1,
+                transform:
+                  hoverNav === "register" ? "scale(1.06)" : "scale(1)",
+                boxShadow:
+                  hoverNav === "register"
+                    ? "0 4px 16px rgba(40,167,69,0.15)"
+                    : styles.authLink.boxShadow,
+              }}
+              onMouseEnter={() => setHoverNav("register")}
+              onMouseLeave={() => setHoverNav(null)}
+            >
+              Criar Conta
+            </Link>
+          </div>
         )}
       </div>
 
-      {/* Mobile dropdown */}
+      {/* Dropdown em mobile */}
       {isMobile && menuOpen && (
-        <nav style={styles.mobileMenu}>
-          {renderNavList()}
-        </nav>
+        <nav style={styles.mobileMenu}>{renderNavList()}</nav>
       )}
     </header>
   );
@@ -204,7 +230,7 @@ const styles = {
     zIndex: 100,
     borderRadius: "0 0 12px 12px",
     transition: "all 0.3s ease-in-out",
-    border: "2px solid #111", // mini borda preta ao redor do header
+    border: "2px solid #111",
   },
   logo: {
     display: "flex",
@@ -212,18 +238,25 @@ const styles = {
     textDecoration: "none",
     color: "#28a745",
   },
-  logoImage: { 
-    height: 40,   // Ajuste conforme desejar
+  logoImage: {
+    height: 40,
     marginRight: 8,
-    resizeMode: 'contain'  // ou 'cover', dependendo do efeito desejado
+    resizeMode: "contain",
   },
-  logoText: { fontSize: 24, fontWeight: "bold", color: "#28a745", letterSpacing: 1 },
   navList: {
     display: "flex",
     listStyle: "none",
     margin: 0,
     padding: 0,
     gap: "20px",
+  },
+  mobileNavList: {
+    display: "flex",
+    flexDirection: "column",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+    gap: "4px",
   },
   navItem: {
     position: "relative",
@@ -236,7 +269,6 @@ const styles = {
     padding: "10px 14px",
     borderRadius: "6px",
     transition: "transform 0.3s, background 0.3s, color 0.3s",
-    // O hover será aplicado inline no componente
   },
   rightSection: {
     display: "flex",
@@ -278,9 +310,9 @@ const styles = {
   authLink: {
     textDecoration: "none",
     color: "#fff",
-    fontSize: "15px", // tamanho levemente menor
+    fontSize: "15px",
     fontWeight: "bold",
-    padding: "10px 20px", // menor altura e largura
+    padding: "10px 20px",
     borderRadius: "6px",
     background: "linear-gradient(90deg, #28a745 60%, #007bff 100%)",
     boxShadow: "0 2px 8px rgba(40,167,69,0.10)",
@@ -288,7 +320,6 @@ const styles = {
     border: "none",
     outline: "none",
     display: "inline-block",
-    marginTop: 0,
     letterSpacing: 0.5,
   },
   hamburger: {
@@ -315,20 +346,16 @@ const styles = {
     boxShadow: "0 4px 16px rgba(40,167,69,0.10)",
     borderRadius: "0 0 12px 12px",
   },
-  // Adicione a borda preta na foto de perfil
   profileImage: {
     width: "42px",
     height: "42px",
     borderRadius: "50%",
     cursor: "pointer",
     objectFit: "cover",
-    border: "2px solid #111", // borda preta
+    border: "2px solid #111",
     background: "#fafbfc",
     transition: "transform 0.3s, box-shadow 0.3s",
   },
-// ...existing code...
 };
-
-
 
 export default Header;

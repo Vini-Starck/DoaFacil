@@ -23,6 +23,7 @@ import SupportPage from "./components/SupportPage";
 import TermsOfUse from "./components/TermoDeUso";
 import CheckEmail from "./components/CheckEmail";
 import ComoUsar from "./components/ComoUsar";
+import Dashboard from "./components/Dashboard";
 
 
 function App() {
@@ -92,6 +93,7 @@ function App() {
           <Route path="/terms" element={ <TermsOfUse/>} />
           <Route path="/check-email" element={ <CheckEmail/>} />
           <Route path="/como-usar" element={ <ComoUsar/>} />
+          <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
         </Routes>
       </main>
       <Footer />
