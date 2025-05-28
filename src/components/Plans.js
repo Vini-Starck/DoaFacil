@@ -53,8 +53,8 @@ export default function Plans() {
           try {
             const snap = await getDoc(userRef);
             const data = snap.exists() ? snap.data() : {};
-            const currentRequests = data.requests || 0;
-            const currentDonations = data.donations || 0;
+            const currentRequests = data.requestsLeft || 0;
+            const currentDonations = data.donationsLeft || 0;
             await updateDoc(userRef, {
               requestsLeft: currentRequests + plan.requests,
               donationsLeft: currentDonations + plan.donations
