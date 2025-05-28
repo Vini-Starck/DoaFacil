@@ -145,7 +145,6 @@ const styles = {
   page: {
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     color: "#222",
-    background: "linear-gradient(135deg, #28a745 0%, #007bff 100%)",
     minHeight: "100vh",
     textAlign: "center",
     padding: "0 0 40px 0",

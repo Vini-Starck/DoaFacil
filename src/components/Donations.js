@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../AuthContext";
 import { db, storage } from "../config/firebase";
-import { getDocs, collection } from "firebase/firestore";
+import { getDocs, collection, doc, getDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import AdSense from "./AdSense";
+import { useNavigate } from "react-router-dom";
 
 const donationTypes = [
   { value: "", label: "Todos os Tipos" },
@@ -33,15 +34,15 @@ const Donations = ({ onDonationClick, reportedDonationIds }) => {
   const [hoveredId, setHoveredId] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [hiddenDonations, setHiddenDonations] = useState([]);
+  const [requestsLeft, setRequestsLeft] = useState(null);
+  const navigate = useNavigate();
 
   // Fetch hidden donations
   useEffect(() => {
     const fetchHiddenDonations = async () => {
       if (!currentUser) return;
       try {
-        const snap = await getDocs(
-          collection(db, "users", currentUser.uid, "hiddenDonations")
-        );
+        const snap = await getDocs(collection(db, "users", currentUser.uid, "hiddenDonations"));
         const hiddenIds = snap.docs.map((docSnap) => docSnap.id);
         setHiddenDonations(hiddenIds);
       } catch (error) {
@@ -49,7 +50,20 @@ const Donations = ({ onDonationClick, reportedDonationIds }) => {
       }
     };
 
+    const fetchRequestsLeft = async () => {
+      if (!currentUser) return;
+      try {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          setRequestsLeft(userDoc.data().requestsLeft);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar requestsLeft:", error);
+      }
+    };
+
     fetchHiddenDonations();
+    fetchRequestsLeft();
   }, [currentUser]);
 
   // Fetch donations + resolve image URLs
@@ -175,7 +189,40 @@ const Donations = ({ onDonationClick, reportedDonationIds }) => {
 
       <div style={styles.container}>
         <h1 style={styles.title}>Doações Disponíveis</h1>
+
+
+        {requestsLeft !== null && (
+          <p style={{ textAlign: 'center', marginBottom: 16, color: requestsLeft === 0 ? 'red' : '#28a745', fontWeight: 'bold' }}>
+            {requestsLeft > 0
+              ? `Você ainda pode solicitar ${requestsLeft} doação(ões).`
+              : 'Você atingiu o limite de solicitações. Considere adquirir um plano para desbloquear mais!'}
+          </p>
+        )}
+
+        {requestsLeft === 0 && (
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <button
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#007bff',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontSize: 16,
+              }}
+              onClick={() => navigate('/plans')}
+            >
+              Ver Planos
+            </button>
+          </div>
+        )}
+
+
         <div style={styles.filtersBar}>
+
+
+
           <input
             type="text"
             placeholder="Pesquisar por título ou descrição..."

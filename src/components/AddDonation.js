@@ -7,13 +7,11 @@ import {
   addDoc,
   collection,
   serverTimestamp,
-  query,
-  where,
-  getCountFromServer,
 } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import CustomPlacesAutocomplete from "./CustomPlacesAutocomplete";
 import AdSense from "./AdSense";
+import { FaRocket, FaArrowRight } from "react-icons/fa"; // Impressão alienígena
 
 const donationTypes = [
   "Alimentos",
@@ -25,8 +23,6 @@ const donationTypes = [
   "Outros",
 ];
 
-const MAX_DONATIONS = 5;
-
 const AddDonation = () => {
   // Estados principais
   const [title, setTitle] = useState("");
@@ -34,6 +30,8 @@ const AddDonation = () => {
   const [fileUpload, setFileUpload] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [isPremium, setIsPremium] = useState(false);
+  const [donationsLeft, setDonationsLeft] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Localização unificada
   const [locationText, setLocationText] = useState("");
@@ -63,6 +61,7 @@ const AddDonation = () => {
       setCustomType(p.customType || "");
     }
   }, []);
+
   // Persiste sempre que muda
   useEffect(() => {
     localStorage.setItem(
@@ -171,12 +170,17 @@ const AddDonation = () => {
   const handleDescriptionChange = (e) =>
     e.target.value.length <= 500 && setDescription(e.target.value);
 
-  // Verifica se usuário é premium
+  // Verifica se usuário é premium e busca donationsLeft
   useEffect(() => {
     async function fetchUser() {
       if (!auth.currentUser) return;
       const snap = await getDoc(doc(db, "users", auth.currentUser.uid));
-      if (snap.exists()) setIsPremium(!!snap.data().isPremium);
+      if (snap.exists()) {
+        const data = snap.data();
+        setIsPremium(!!data.isPremium);
+        setDonationsLeft(data.donationsLeft ?? 0);
+      }
+      setLoading(false);
     }
     fetchUser();
   }, []);
@@ -194,6 +198,10 @@ const AddDonation = () => {
     ) {
       return alert("Preencha todos os campos obrigatórios.");
     }
+    if (!isPremium && donationsLeft <= 0) {
+      alert("Você não possui doações restantes. Considere adquirir um plano.");
+      return navigate('/plans');
+    }
     try {
       // Upload imagem
       const fileRef = ref(storage, `donationImages/${fileUpload.name}`);
@@ -205,17 +213,6 @@ const AddDonation = () => {
       );
       const finalType = donationType === "Outros" ? customType : donationType;
 
-      if (!isPremium) {
-        const q = query(
-          collection(db, "donationItems"),
-          where("userId", "==", auth.currentUser.uid)
-        );
-        const snapshot = await getCountFromServer(q);
-        if (snapshot.data().count >= MAX_DONATIONS) {
-          alert("Você atingiu o limite de doações cadastradas.");
-          return;
-        }
-      }
 
       await addDoc(collection(db, "donationItems"), {
         title,
@@ -242,12 +239,7 @@ const AddDonation = () => {
 
   // Estilos harmonizados com o restante do app
   const styles = {
-    page: {
-      background: "linear-gradient(135deg, #28a745 0%, #007bff 100%)",
-      minHeight: "100vh",
-      padding: "0 0 40px 0",
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    },
+    
     container: {
       maxWidth: 520,
       margin: "0 auto",
@@ -346,7 +338,112 @@ const AddDonation = () => {
       marginTop: 10,
       marginBottom: -8,
     },
+    headerRow: {
+      width: "100%",
+      display: "common",
+     
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 18,
+    },
+    headerText: {
+      color: "#28a745",
+      fontWeight: "bold",
+      fontSize: 24,
+    },
+    headerCount: {
+      color: "#bf1b1b",
+      fontSize: 14,
+    },
+    page: {
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "'Segoe UI', sans-serif",
+      color: "#fff",
+    },
+    cosmicContainer: {
+      background: "rgba(37, 33, 100, 0.39)",
+      borderRadius: 16,
+      padding: 32,
+      textAlign: "center",
+      boxShadow: "0 0 20px rgba(136, 201, 165, 0.36)",
+      backdropFilter: "blur(10px)",
+      maxWidth: 450,
+      margin: "0 auto",
+    },
+    header: {
+      fontSize: 22,
+      marginBottom: 12,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      animation: "float 3s ease-in-out infinite",
+    },
+    icon: {
+      animation: "spin 4s linear infinite",
+    },
+    message: {
+      fontSize: 18,
+      margin: "16px 0",
+      lineHeight: 1.4,
+    },
+    planButton: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "12px 24px",
+      background: "#00ffe7",
+      border: "none",
+      borderRadius: 8,
+      color: "#020024",
+      fontWeight: "bold",
+      cursor: "pointer",
+      transition: "transform 0.2s, box-shadow 0.2s",
+    },
+    planButtonHover: {
+      transform: "scale(1.05)",
+      boxShadow: "0 6px 20px rgba(0, 255, 231, 0.5)",
+    },
+    '@keyframes float': {
+      '0%,100%': { transform: 'translateY(0)' },
+      '50%':   { transform: 'translateY(-10px)' },
+    },
+    '@keyframes spin': {
+      '0%':   { transform: 'rotate(0deg)' },
+      '100%': { transform: 'rotate(360deg)' },
+    },
   };
+
+  if (loading) return null;
+
+  // Se sem doações restantes
+  if (donationsLeft <= 0) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.cosmicContainer}>
+          <h2 style={styles.header}>
+            <FaRocket style={styles.icon} size={28} />
+            Ops! suas doações acabaram!
+          </h2>
+          <p style={styles.message}>
+            Você esgotou seu limite de doações.<br />
+            Abasteça sua conta com novos planos para continuar explorando e ajudando quem precisa!
+          </p>
+          <button
+            style={styles.planButton}
+            onClick={() => navigate("/plans")}
+            onMouseEnter={e => Object.assign(e.currentTarget.style, styles.planButtonHover)}
+            onMouseLeave={e => Object.assign(e.currentTarget.style, { transform: '', boxShadow: '' })}
+          >
+            Ver Planos <FaArrowRight />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
@@ -358,9 +455,11 @@ const AddDonation = () => {
         />
       </div>
       <form onSubmit={handleSubmit} style={styles.container}>
-        <h2 style={{ color: "#28a745", marginBottom: 18, fontWeight: "bold" }}>
-          Fazer uma Doação
-        </h2>
+        <div style={styles.headerRow}>
+          <h2 style={styles.headerText}>Fazer uma Doação</h2>
+          <h3 style={styles.headerCount}>Doações restantes: {donationsLeft}</h3>
+          
+        </div>
 
         <label style={styles.label}>Título (máx. 50)</label>
         <input
@@ -478,11 +577,6 @@ const AddDonation = () => {
         <button type="submit" style={styles.button}>
           Cadastrar Doação
         </button>
-        {!isPremium && (
-          <div style={styles.limitMsg}>
-            Limite de doações para contas gratuitas: {MAX_DONATIONS}
-          </div>
-        )}
       </form>
       {/* AdSense abaixo do formulário */}
       <div style={{ margin: "24px auto 0", maxWidth: 320 }}>

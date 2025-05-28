@@ -1,4 +1,3 @@
-// src/components/DonationDetailModal.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -29,16 +28,14 @@ const getRelativeTime = (date) => {
   return `${days} dias atrás`;
 };
 
-export default function DonationDetailModal({ donation, onClose, onReport }) {
+export default function DonationDetailModal({ donation, onClose, onReport, onRequestSuccess  }) {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [creator, setCreator] = useState(null);
   const [creatorRating, setCreatorRating] = useState(null);
   const [requested, setRequested] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
   const [reported, setReported] = useState(false);
 
-  // Carrega dados do criador
   useEffect(() => {
     async function fetchCreator() {
       try {
@@ -55,21 +52,6 @@ export default function DonationDetailModal({ donation, onClose, onReport }) {
     fetchCreator();
   }, [donation.userId]);
 
-  // Verifica se usuário logado é premium
-  useEffect(() => {
-    async function fetchUserPremium() {
-      if (!currentUser) return;
-      try {
-        const snap = await getDoc(doc(db, "users", currentUser.uid));
-        if (snap.exists()) setIsPremium(!!snap.data().isPremium);
-      } catch (err) {
-        setIsPremium(false);
-      }
-    }
-    fetchUserPremium();
-  }, [currentUser]);
-
-  // Verifica se o usuário já denunciou esta doação
   useEffect(() => {
     async function checkReported() {
       if (!currentUser) return;
@@ -84,7 +66,6 @@ export default function DonationDetailModal({ donation, onClose, onReport }) {
     checkReported();
   }, [currentUser, donation.id]);
 
-  // Verifica se já existe solicitação para esta doação
   useEffect(() => {
     if (!currentUser) return;
     async function checkRequested() {
@@ -106,58 +87,46 @@ export default function DonationDetailModal({ donation, onClose, onReport }) {
     checkRequested();
   }, [currentUser, donation.id]);
 
-  // Limite de solicitações para não-premium
-  const MAX_REQUESTS = 3;
-
-  // Envia notificação de solicitação
   const handleRequest = async () => {
     if (!currentUser) {
       alert("Você precisa estar logado para solicitar a doação.");
       return;
     }
+
     if (currentUser.uid === donation.userId) {
       alert("Você é o criador desta doação.");
       return;
     }
 
-    
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
 
-    // Só aplica limite se NÃO for premium
-    if (!isPremium) {
-      try {
-        const q = query(
-          collection(db, "notifications"),
-          where("fromUser", "==", currentUser.uid),
-          where("type", "==", "requestDonation"),
-          where("status", "in", ["pending", "accepted"])
-        );
-        const snapshot = await getDocs(q);
-        if (snapshot.size >= MAX_REQUESTS) {
-          alert("Você atingiu o limite de solicitações de doação.");
-          return;
-        }
-      } catch (err) {
-        alert("Erro ao verificar limite de solicitações.");
+      if (!userSnap.exists()) {
+        alert("Usuário não encontrado.");
         return;
       }
-    }
 
-    try {
-      // evita chats duplicados
+      const userData = userSnap.data();
+      const requestsLeft = userData.requestsLeft || 0;
+
+      if (requestsLeft <= 0) {
+        alert("Você atingiu o limite de solicitações de doação.");
+        return;
+      }
+
       const q = query(
         collection(db, "chats"),
         where("participants", "array-contains", currentUser.uid)
       );
       const snap = await getDocs(q);
-      const exists = snap.docs.some((d) =>
-        d.data().participants.includes(donation.userId)
-      );
+      const exists = snap.docs.some((d) => d.data().participants.includes(donation.userId));
+
       if (exists) {
         alert("Você já tem um chat com este usuário.");
         return;
       }
 
-      // cria notificação
       await addDoc(collection(db, "notifications"), {
         fromUser: currentUser.uid,
         fromUserName: currentUser.displayName || currentUser.email,
@@ -167,42 +136,45 @@ export default function DonationDetailModal({ donation, onClose, onReport }) {
         donationId: donation.id,
         donationTitle: donation.title,
         type: "requestDonation",
-        message: `O usuário ${currentUser.displayName ||
-          currentUser.email} deseja a sua doação "${donation.title}".`,
+        message: `O usuário ${currentUser.displayName || currentUser.email} deseja a sua doação "${donation.title}".`,
         status: "pending",
         createdAt: serverTimestamp(),
       });
 
+      await updateDoc(userRef, {
+        requestsLeft: increment(-1),
+      });
+
       alert("Solicitação enviada!");
       setRequested(true);
+      if (onRequestSuccess) {
+        onRequestSuccess();
+      }
+
     } catch (err) {
       console.error("Erro ao solicitar doação:", err);
       alert("Não foi possível enviar solicitação.");
     }
   };
 
-  // Função para denunciar e ocultar a doação
   const handleReport = async () => {
     if (!currentUser) return;
     try {
-      // Adiciona ou atualiza a denúncia do usuário com merge
       await setDoc(
         doc(db, "users", currentUser.uid, "hiddenDonations", donation.id),
         {
           reportedAt: serverTimestamp(),
           donationId: donation.id,
         },
-        { merge: true } // evita erro se já existir
+        { merge: true }
       );
 
-      // Incrementa o contador de denúncias no documento da doação
       const donationRef = doc(db, "donationItems", donation.id);
       await updateDoc(donationRef, {
         reportCount: increment(1),
       });
 
       setReported(true);
-      // Atualiza o estado no componente pai para remover a doação em tempo real
       onReport && onReport(donation.id);
       alert("Doação denunciada e ocultada para você.");
       onClose();
@@ -212,7 +184,6 @@ export default function DonationDetailModal({ donation, onClose, onReport }) {
     }
   };
 
-  // Função para mostrar distância se existir
   const renderDistance = () => {
     if (donation.distance !== undefined && donation.distance !== Infinity) {
       return (
@@ -330,14 +301,7 @@ export default function DonationDetailModal({ donation, onClose, onReport }) {
         >
           {requested ? "Solicitação enviada" : "Quero esta doação"}
         </button>
-        {!isPremium && (
-          <div style={{ marginTop: 10, color: "#888", fontSize: 13, textAlign: "center" }}>
-            Limite de solicitações para contas gratuitas: {MAX_REQUESTS}
-          </div>
-        )}
 
-        
-        {/* Botão de denúncia */}
         {!reported ? (
           <button
             style={{
