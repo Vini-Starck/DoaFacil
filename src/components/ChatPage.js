@@ -15,6 +15,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import defaultProfilePic from "../icons/default-profile.png"; // Imagem padrão para perfis
 
 const ChatPage = () => {
   const { currentUser } = useAuth();
@@ -135,7 +136,7 @@ const ChatPage = () => {
               }}
             >
               <img
-                src={chat.otherUser?.photoURL || "/default-avatar.png"}
+                src={chat.otherUser?.photoURL || defaultProfilePic}
                 alt="Avatar"
                 style={styles.avatar}
               />
@@ -158,7 +159,7 @@ const ChatPage = () => {
           <>
             <div style={styles.chatHeader}>
               <img
-                src={selectedChat.otherUser?.photoURL || "/default-avatar.png"}
+                src={selectedChat.otherUser?.photoURL || defaultProfilePic}
                 alt="Avatar"
                 style={styles.avatarLarge}
                 onClick={() =>
@@ -196,9 +197,9 @@ const ChatPage = () => {
                     <img
                       src={
                         me
-                          ? currentUser.photoURL || "/default-avatar.png"
+                          ? currentUser.photoURL || defaultProfilePic
                           : selectedChat.otherUser.photoURL ||
-                            "/default-avatar.png"
+                            defaultProfilePic
                       }
                       alt="Avatar"
                       style={styles.avatarSmall}

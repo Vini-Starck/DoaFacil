@@ -27,9 +27,12 @@ const Home = () => {
         </p>
         <div style={styles.headerActions}>
           {currentUser ? (
-            <Link to="/donations" style={styles.headerButton}>
+            <><Link to="/donations" style={styles.headerButton}>
               Ver Doações
             </Link>
+            <Link to="/como-usar" style={styles.headerButton}>
+              Como usar
+            </Link></>
           ) : (
             <>
               <Link to="/login" style={styles.headerButton}>Entrar</Link>

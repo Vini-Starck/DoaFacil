@@ -24,10 +24,13 @@ import TermsOfUse from "./components/TermoDeUso";
 import CheckEmail from "./components/CheckEmail";
 import ComoUsar from "./components/ComoUsar";
 import Dashboard from "./components/Dashboard";
+import ConcludeDetailModal from "./components/ConcludeDetailModal";
+import Plans from "./components/Plans";
 
 
 function App() {
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [showConcludeModal, setShowConcludeModal] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [reportedDonationIds, setReportedDonationIds] = useState([]);
 
@@ -94,6 +97,7 @@ function App() {
           <Route path="/check-email" element={ <CheckEmail/>} />
           <Route path="/como-usar" element={ <ComoUsar/>} />
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+          <Route path="/plans" element={<PrivateRoute element={<Plans />} />} />
         </Routes>
       </main>
       <Footer />
@@ -102,6 +106,13 @@ function App() {
           donation={selectedDonation}
           onClose={() => setShowModal(false)}
           onReport={handleDonationReport}  // Passa a callback para o modal
+        />
+      )}
+      
+      {showConcludeModal && selectedDonation (
+        <ConcludeDetailModal
+          donation={selectedDonation}
+          onClose={() => setShowConcludeModal(false)}
         />
       )}
     </div>

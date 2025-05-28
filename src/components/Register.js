@@ -11,6 +11,7 @@ import { createUserDocumentIfNotExists } from '../utils/userUtils';
 import AdSense from './AdSense';
 import logo from '../icons/logo.png';
 import logoText from '../icons/logoEscrito.png';
+import { serverTimestamp } from 'firebase/firestore';
 
 const Register = () => {
   const [displayName, setDisplayName] = useState('');
@@ -35,7 +36,7 @@ const Register = () => {
       await updateProfile(user, { displayName });
       await createUserDocumentIfNotExists(user, {
         acceptedTerms: true,
-        termsAcceptedAt: new Date(),
+        termsAcceptedAt:  serverTimestamp(),
       });
       navigate('/');
     } catch (error) {
@@ -51,7 +52,7 @@ const Register = () => {
       await createUserDocumentIfNotExists(user, {
         photoURL: user.photoURL,
         acceptedTerms: true,
-        termsAcceptedAt: new Date(),
+        termsAcceptedAt: serverTimestamp(),
       });
       navigate('/');
     } catch (error) {

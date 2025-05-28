@@ -15,6 +15,7 @@ import {
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
 import { useNavigate } from "react-router-dom";
+import ConcludeDetailModal from "./ConcludeDetailModal";
 
 // HoverButton permanece inalterado
 const HoverButton = ({ baseStyle, hoverStyle, onClick, children }) => {
@@ -41,6 +42,8 @@ const MyDonations = () => {
   const [donations, setDonations] = useState([]);
   const [hoveredId, setHoveredId] = useState(null);
   const navigate = useNavigate();
+  const [showConcludeModal, setShowConcludeModal] = useState(false);
+  const [selectedDonation, setSelectedDonation] = useState(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -309,9 +312,13 @@ const MyDonations = () => {
         <div style={styles.grid}>
           {concluded.map((d) => (
             <div
-              key={d.id}
-              style={{ ...styles.cardBase, boxShadow: "0 4px 8px rgba(0,0,0,.1)", cursor: "default" }}
-            >
+                key={d.id}
+                style={{ ...styles.cardBase, boxShadow: "0 4px 8px rgba(0,0,0,.1)", cursor: "pointer" }}
+                onClick={() => {
+                  setSelectedDonation(d);
+                  setShowConcludeModal(true);
+                }}
+              >
               <div style={styles.infoStyle}>
                 {d.imageUrl && (
                   <img
@@ -336,6 +343,13 @@ const MyDonations = () => {
         </div>
       ) : (
         <p style={{ textAlign: "center", color: "#666" }}>Nenhuma doação concluída.</p>
+      )}
+
+      {showConcludeModal && selectedDonation && (
+          <ConcludeDetailModal
+            donation={selectedDonation}
+            onClose={() => setShowConcludeModal(false)}
+          />
       )}
     </section>
   );

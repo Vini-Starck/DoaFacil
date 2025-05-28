@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import AdSense from './AdSense';
 import logo from '../icons/logo.png';
 
+
+
+
 const Dashboard = () => {
   useEffect(() => {
     document.body.style.background = 'linear-gradient(135deg, #28a745, #007bff)';
@@ -20,6 +23,7 @@ const Dashboard = () => {
     { label: 'Como Usar', path: '/como-usar' },
     { label: 'Suporte', path: '/support' },
     { label: 'Termos de Uso', path: '/terms' },
+    { label: 'Planos', path: '/plans' },
   ];
 
   const handleHover = (e) => {

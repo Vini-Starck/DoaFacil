@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
 import AdSense from "./AdSense"; // Importando AdSense
+import defaultProfilePic from "../icons/default-profile.png"; // Imagem padrão de perfil
 
 
 function RatingModal({ visible, onClose, onSubmit, targetUser }) {
@@ -281,7 +282,7 @@ function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk, on
         <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
           <Link to={`/profile/${notif.fromUser}`}>
             <img
-              src={notif.fromUserPhoto || "/icons/default-profile.png"}
+              src={notif.fromUserPhoto || defaultProfilePic}
               alt=""
               style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover" }}
             />
