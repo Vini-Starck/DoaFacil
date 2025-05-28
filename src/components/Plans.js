@@ -132,7 +132,7 @@ const styles = {
     marginBottom: 12
   },
   message: {
-    color: 'green',
+    color: 'black',
     textAlign: 'center',
     marginBottom: 12
   },
