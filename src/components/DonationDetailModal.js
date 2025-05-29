@@ -28,7 +28,7 @@ const getRelativeTime = (date) => {
   return `${days} dias atrás`;
 };
 
-export default function DonationDetailModal({ donation, onClose, onReport, onRequestSuccess  }) {
+export default function DonationDetailModal({ donation, onClose, onReport, onRequestSuccess }) {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [creator, setCreator] = useState(null);
