@@ -12,7 +12,7 @@ export default function AdSense({ adSlot, style = { display: 'block' } }) {
       console.error('AdSense error:', e);
     }
   }, []);
-
+// aaa
   return (
     <ins
       className="adsbygoogle"
