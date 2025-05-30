@@ -10,7 +10,10 @@ import {
   doc,
   addDoc,
   getDoc,
+  writeBatch,
+  getDocs,
   serverTimestamp,
+  Timestamp,
   runTransaction
 } from "firebase/firestore";
 import { Link } from "react-router-dom";
@@ -75,52 +78,89 @@ const NotificationsPage = () => {
   }, [currentUser]);
 
   // Aceita requestDonation
-  const handleAcceptDonationRequest = async notif => {
-    try {
-      // atualiza notificação
-      await updateDoc(doc(db, "notifications", notif.id), {
-        status: "accepted",
-        type: "donationAccepted",
-      });
-  
-      // atualiza item de doação
-      await updateDoc(doc(db, "donationItems", notif.donationId), {
-        status: "em andamento",
-        beneficiary: notif.fromUser,
-      });
-  
-      // cria um novo chat entre doador e solicitante
-      const chatDoc = await addDoc(collection(db, "chats"), {
-        users: [currentUser.uid, notif.fromUser],
-        donationId: notif.donationId,
-        donationTitle: notif.donationTitle,
-        createdAt: serverTimestamp(),
-        messages: [],
-      });
-  
-      const chatId = chatDoc.id;
-  
-      // notifica o solicitante que foi aceito e que o chat está disponível
-      await addDoc(collection(db, "notifications"), {
-        fromUser: currentUser.uid,
-        fromUserName: currentUser.displayName || currentUser.email,
-        toUser: notif.fromUser,
-        type: "requestAccepted",
-        donationId: notif.donationId,
-        donationTitle: notif.donationTitle,
-        chatId: chatId, // 🔥 referencia o chat criado
-        message: `Sua solicitação para a doação "${notif.donationTitle}" foi aceita! Você pode conversar com o doador agora.`,
-        status: "unread",
-        createdAt: serverTimestamp(),
-      });
-  
-      alert("Solicitação aceita com sucesso e chat criado!");
-    } catch (err) {
-      console.error("Erro ao aceitar solicitação de doação:", err);
-      alert("Erro ao aceitar: " + err.message);
+
+const handleAcceptDonationRequest = async notif => {
+  try {
+    const donationRef = doc(db, "donationItems", notif.donationId);
+    const donationSnap = await getDoc(donationRef);
+    if (!donationSnap.exists()) {
+      return alert("Doação não encontrada.");
     }
-  };
-  
+
+    const { status } = donationSnap.data();
+    if (status === "em andamento" || status === "concluido") {
+      return alert("Esta doação já está em andamento ou foi finalizada.");
+    }
+
+    // Calcular timestamps
+    const now = Timestamp.now();
+    const expirationAt = Timestamp.fromDate(
+      new Date(now.toMillis() + 7 * 24 * 60 * 60 * 1000)
+    );
+
+    // Inicia batch
+    const batch = writeBatch(db);
+
+    // 1) Atualiza a doação
+    batch.update(donationRef, {
+      status: "em andamento",
+      beneficiary: notif.fromUser,
+      acceptedAt: now,
+      expirationAt: expirationAt
+    });
+
+    // 2) Atualiza a notificação aceita
+    const acceptedRef = doc(db, "notifications", notif.id);
+    batch.update(acceptedRef, {
+      status: "accepted",
+      type: "donationAccepted"
+    });
+
+    // 3) Recusa demais solicitações pendentes para a mesma doação
+    const pendingsQuery = query(
+      collection(db, "notifications"),
+      where("donationId", "==", notif.donationId),
+      where("status", "==", "pending"),
+      where("type", "==", "requestDonation")
+    );
+    const pendingsSnap = await getDocs(pendingsQuery);
+    pendingsSnap.forEach(docSnap => {
+      if (docSnap.id !== notif.id) {
+        batch.update(doc(db, "notifications", docSnap.id), { status: "declined" });
+      }
+    });
+
+    // 4) Commit atômico
+    await batch.commit();
+
+    // 5) Cria chat e notificação de chat
+    const chatDoc = await addDoc(collection(db, "chats"), {
+      users: [currentUser.uid, notif.fromUser],
+      donationId: notif.donationId,
+      donationTitle: notif.donationTitle,
+      createdAt: serverTimestamp(),
+      messages: []
+    });
+    await addDoc(collection(db, "notifications"), {
+      fromUser: currentUser.uid,
+      fromUserName: currentUser.displayName || currentUser.email,
+      toUser: notif.fromUser,
+      type: "requestAccepted",
+      donationId: notif.donationId,
+      donationTitle: notif.donationTitle,
+      chatId: chatDoc.id,
+      message: `Sua solicitação para a doação "${notif.donationTitle}" foi aceita!`,
+      status: "unread",
+      createdAt: serverTimestamp()
+    });
+
+    alert("Solicitação aceita, demais recusadas e chat criado!");
+  } catch (err) {
+    console.error("Erro ao aceitar solicitação de doação:", err);
+    alert("Erro ao aceitar: " + err.message);
+  }
+};
+
 
   // Recusa requestDonation
   const handleDeclineDonationRequest = async notif => {
@@ -305,16 +345,20 @@ function NotificationCard({ notif, onAcceptDonation, onDeclineDonation, onOk, on
         {donationImg && (
           <img
             src={donationImg}
-            alt=""
+            alt="Imagem da doação"
             style={{
               width: "100%",
-              maxHeight: 150,
+              maxHeight: 200,
+              aspectRatio: "16/9",
               objectFit: "cover",
-              borderRadius: 6,
+              borderRadius: 8,
               marginBottom: 10,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
             }}
+            loading="lazy"
           />
         )}
+
 
         <p>
           <strong>

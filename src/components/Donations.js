@@ -331,7 +331,6 @@ const Donations = ({ onDonationClick, reportedDonationIds }) => {
 
 const styles = {
   page: {
-    background: "linear-gradient(135deg, #28a745 0%, #007bff 100%)",
     minHeight: "100vh",
     padding: "0 0 40px 0",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",

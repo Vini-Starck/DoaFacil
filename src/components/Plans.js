@@ -124,7 +124,7 @@ const styles = {
     marginBottom: 20,
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333'
+    color: 'white'
   },
   error: {
     color: 'red',

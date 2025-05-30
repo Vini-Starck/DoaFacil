@@ -16,7 +16,7 @@ const navItems = [
   { name: "Doar", path: "/add-donation" },
   { name: "Chat", path: "/chat" },
   { name: "Mapa", path: "/map" },
-  { name: "Notificações", path: "/notifications" },
+  { name: "Planos", path: "/plans" },
 ];
 
 const Header = () => {
@@ -43,7 +43,7 @@ const Header = () => {
     const q = query(
       collection(db, "notifications"),
       where("toUser", "==", currentUser.uid),
-      where("status", "in", ["unread", "pending"])
+      where("status", "in", ["unread", "pending"]),
     );
     return onSnapshot(q, snap => setNotifCount(snap.docs.length));
   }, [currentUser]);
@@ -58,7 +58,6 @@ const Header = () => {
     return (
       <ul style={listStyle}>
         {navItems.map((item, idx) => {
-          // estilo base do link
           const baseLinkStyle = {
             ...styles.navLink,
             background:
@@ -73,7 +72,6 @@ const Header = () => {
                 : "none",
           };
 
-          // overrides para mobile
           const mobileLinkStyle = isMobile
             ? {
                 ...baseLinkStyle,

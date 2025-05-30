@@ -273,7 +273,6 @@ const Profile = () => {
 
 const styles = {
   page: {
-    background: "linear-gradient(135deg, #28a745, #007bff)",
     minHeight: "100vh",
     padding: "20px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",

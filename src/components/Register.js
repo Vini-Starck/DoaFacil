@@ -21,42 +21,72 @@ const Register = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const navigate = useNavigate();
 
+  const commonUserData = {
+    acceptedTerms: true,
+    termsAcceptedAt: serverTimestamp(),
+    requestsLeft: 3,
+    donationsLeft: 5,
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
+
     if (!acceptTerms) {
       alert('Você precisa aceitar os Termos de Uso para continuar.');
       return;
     }
+
+    if (!displayName.trim() || !email.trim() || !password) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       alert('As senhas não coincidem.');
       return;
     }
+
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName });
+
       await createUserDocumentIfNotExists(user, {
-        acceptedTerms: true,
-        termsAcceptedAt:  serverTimestamp(),
+        displayName,
+        email,
+        photoURL: user.photoURL || null,
+        ...commonUserData,
       });
+
       navigate('/');
     } catch (error) {
-      alert('Erro ao registrar: ' + error.message);
+      console.error('Erro ao registrar:', error);
+      alert('Erro ao registrar: ' + (error.message || 'Tente novamente mais tarde.'));
     }
   };
 
   const handleGoogleRegister = async () => {
+    if (!acceptTerms) {
+      alert('Você precisa aceitar os Termos de Uso para continuar.');
+      return;
+    }
+
     const provider = new GoogleAuthProvider();
+
     try {
       const { user } = await signInWithPopup(auth, provider);
       await updateProfile(user, { displayName: user.displayName });
+
       await createUserDocumentIfNotExists(user, {
+        displayName: user.displayName,
+        email: user.email,
         photoURL: user.photoURL,
-        acceptedTerms: true,
-        termsAcceptedAt: serverTimestamp(),
+        ...commonUserData,
       });
+
       navigate('/');
     } catch (error) {
-      alert('Erro ao registrar com Google: ' + error.message);
+      console.error('Erro ao registrar com Google:', error);
+      alert('Erro ao registrar com Google: ' + (error.message || 'Tente novamente mais tarde.'));
     }
   };
 
@@ -183,12 +213,15 @@ const Register = () => {
       <div style={{ marginBottom: 24 }}>
         <AdSense adSlot="4451812486" style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }} />
       </div>
+
       <div style={styles.container}>
         <div style={styles.logoBox}>
           <img src={logo} alt="Logo DoaFácil" style={styles.logoImg} />
           <img src={logoText} alt="Texto DoaFácil" style={styles.logoTextImg} />
         </div>
+
         <h2 style={styles.title}>Criar Conta</h2>
+
         <form onSubmit={handleRegister} style={styles.form}>
           <label style={styles.label}>Nome</label>
           <input
@@ -199,6 +232,7 @@ const Register = () => {
             style={styles.input}
             required
           />
+
           <label style={styles.label}>Email</label>
           <input
             type="email"
@@ -209,6 +243,7 @@ const Register = () => {
             required
             autoComplete="username"
           />
+
           <label style={styles.label}>Senha</label>
           <input
             type="password"
@@ -219,6 +254,7 @@ const Register = () => {
             required
             autoComplete="new-password"
           />
+
           <label style={styles.label}>Confirmar Senha</label>
           <input
             type="password"
@@ -229,6 +265,7 @@ const Register = () => {
             required
             autoComplete="new-password"
           />
+
           <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
             <input
               type="checkbox"
@@ -240,6 +277,7 @@ const Register = () => {
               Eu li e aceito os <Link to="/terms" style={styles.link}>Termos de Uso</Link>
             </label>
           </div>
+
           <button
             type="submit"
             style={{ ...styles.button, ...styles.registerButton }}
@@ -249,7 +287,9 @@ const Register = () => {
             Criar Conta
           </button>
         </form>
+
         <hr style={styles.hr} />
+
         <button
           onClick={handleGoogleRegister}
           style={{ ...styles.button, ...styles.googleButton }}
@@ -260,15 +300,16 @@ const Register = () => {
             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
             alt="Google"
             style={styles.googleIcon}
-
           />
           Criar Conta com Google
         </button>
+
         <div style={styles.bottomText}>
           Já tem conta?
           <Link to="/login" style={styles.link}>Entrar</Link>
         </div>
       </div>
+
       <div style={{ marginTop: 24 }}>
         <AdSense adSlot="4451812486" style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }} />
       </div>
