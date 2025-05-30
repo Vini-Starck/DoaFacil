@@ -235,7 +235,7 @@ const Profile = () => {
       {/* Avaliações em grid: clicar abre modal de conclusão */}
       {avaliations.length > 0 && (
         <div style={styles.reviewWrapper}>
-          <h3 style={styles.reviewTitle}>Avaliações Recebidas</h3>
+          <h1 style={styles.reviewTitle}>Avaliações Recebidas</h1>
           <div style={styles.reviewGrid}>
             {avaliations.map(av => (
               <div
@@ -312,7 +312,7 @@ const styles = {
   secondary: { backgroundColor: "#28a745", color: "#fff" },
   danger: { backgroundColor: "#dc3545", color: "#fff" },
   reviewWrapper: { width: '100%', maxWidth: '1200px', marginBottom: 24 },
-  reviewTitle: { fontSize: 20, color: 'black', marginBottom: 16, textAlign: 'left' },
+  reviewTitle: { fontSize: 20, color: 'white', marginBottom: 16, textAlign: 'left' },
   reviewGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(30%, 1fr))', gap: '16px' },
   reviewCard: { background: '#fff', borderRadius: 8, padding: 16, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' },
   reviewerLink: { display: 'flex', alignItems: 'center', textDecoration: 'none', marginBottom: 8 },

@@ -114,7 +114,7 @@ export default function SupportPage() {
 }
 
 const styles = {
-  page: { background: '#f4f6f8', minHeight: '100vh', padding: 20 },
+  page: { minHeight: '100vh', padding: 20 },
   backButton: {
     marginBottom: 10,
     background: 'none',

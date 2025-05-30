@@ -85,7 +85,7 @@ export default function Plans() {
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.heading}>Escolha seu Plano</h2>
+      <h1 style={styles.heading}>Escolha seu Plano</h1>
       {error && <p style={styles.error}>{error}</p>}
       {message && <p style={styles.message}>{message}</p>}
       <div style={styles.grid}>

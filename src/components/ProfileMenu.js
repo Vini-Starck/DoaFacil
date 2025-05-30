@@ -37,6 +37,9 @@ const ProfileMenu = ({ currentUser, anchorEl, onClose }) => {
       }}
     >
       <MenuItem onClick={handleGoToProfile}>Perfil</MenuItem>
+      <MenuItem onClick={() => navigate("/plans")}>Planos</MenuItem>
+      <MenuItem onClick={() => navigate("/donations")}>Doações</MenuItem>
+      <MenuItem onClick={() => navigate("/my-donations")}>Minhas doações</MenuItem>
       <MenuItem onClick={handleLogout}>Sair</MenuItem>
     </Menu>
   );

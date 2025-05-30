@@ -234,7 +234,7 @@ const MyDonations = () => {
           ))}
         </div>
       ) : (
-        <p style={{ textAlign: "center", color: "#666" }}>Nenhuma doação ativa.</p>
+        <p style={{ textAlign: "center", color: "white" }}>Nenhuma doação ativa.</p>
       )}
 
       <h2 style={{ textAlign: "center", margin: "40px 0 20px" }}>Doações Em Andamento</h2>
@@ -304,7 +304,7 @@ const MyDonations = () => {
           })}
         </div>
       ) : (
-        <p style={{ textAlign: "center", color: "#666" }}>Nenhuma doação em andamento.</p>
+        <p style={{ textAlign: "center", color: "white" }}>Nenhuma doação em andamento.</p>
       )}
 
       <h2 style={{ textAlign: "center", margin: "40px 0 20px" }}>Doações Concluídas</h2>
@@ -342,7 +342,7 @@ const MyDonations = () => {
           ))}
         </div>
       ) : (
-        <p style={{ textAlign: "center", color: "#666" }}>Nenhuma doação concluída.</p>
+        <p style={{ textAlign: "center", color: "white" }}>Nenhuma doação concluída.</p>
       )}
 
       {showConcludeModal && selectedDonation && (
