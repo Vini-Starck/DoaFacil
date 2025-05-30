@@ -1,16 +1,31 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import AdSense from './AdSense';
 import logo from '../icons/logo.png';
 
-
-
-
 const Dashboard = () => {
+  const [userId, setUserId] = useState(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
+    const auth = getAuth();
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        // Se não estiver autenticado, redireciona para login
+        navigate('/login');
+      }
+    });
+
     document.body.style.background = 'linear-gradient(135deg, #28a745, #007bff)';
-    return () => { document.body.style.background = null; };
-  }, []);
+    return () => {
+      document.body.style.background = null;
+      unsubscribe();
+    };
+  }, [navigate]);
 
   const items = [
     { label: 'Cadastrar Doação', path: '/add-donation' },
@@ -19,7 +34,7 @@ const Dashboard = () => {
     { label: 'Mapa de Doações', path: '/map' },
     { label: 'Chat', path: '/chat' },
     { label: 'Notificações', path: '/notifications' },
-    { label: 'Perfil', path: '/profile' },
+    { label: 'Perfil', path: userId ? `/profile/${userId}` : '#' },  // ✅ Atualizado
     { label: 'Como Usar', path: '/como-usar' },
     { label: 'Suporte', path: '/support' },
     { label: 'Termos de Uso', path: '/terms' },
@@ -30,10 +45,16 @@ const Dashboard = () => {
     e.currentTarget.style.transform = 'scale(1.05)';
     e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
   };
+
   const handleLeave = (e) => {
     e.currentTarget.style.transform = 'scale(1)';
     e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
   };
+
+  if (!userId) {
+    // Pode mostrar um loading, ou simplesmente null enquanto verifica
+    return <div>Carregando...</div>;
+  }
 
   return (
     <div style={styles.page}>
@@ -119,12 +140,6 @@ const styles = {
     fontWeight: 500,
     boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
     transition: 'transform 0.2s, box-shadow 0.2s',
-  },
-  '@global': {
-    '@keyframes rotate': {
-      from: { transform: 'rotate(0deg)' },
-      to: { transform: 'rotate(360deg)' },
-    },
   },
 };
 

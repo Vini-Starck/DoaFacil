@@ -36,7 +36,6 @@ const Login = () => {
 
   const styles = {
     page: {
-      background: "linear-gradient(135deg, #28a745, #007bff)",
       minHeight: "100vh",
       display: "flex",
       justifyContent: "center",

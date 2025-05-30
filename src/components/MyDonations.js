@@ -8,6 +8,7 @@ import {
   doc,
   query,
   where,
+  deleteField,
   getDocs,
   addDoc,
   serverTimestamp
@@ -242,6 +243,38 @@ const MyDonations = () => {
         <div style={styles.grid}>
           {inProgress.map((d) => {
             const amOwner = d.userId === currentUser.uid;
+            
+
+            const handleGiveUp = async (donation) => {
+              try {
+                const donationRef = doc(db, 'donationItems', donation.id);
+                
+                // Atualiza a doação
+                await updateDoc(donationRef, {
+                  status: 'disponível',
+                  beneficiary: deleteField(),
+                  acceptedAt: deleteField(),
+                  expirationAt: deleteField(),
+                });
+
+                // Encerra o chat relacionado
+                const chatQuery = query(
+                  collection(db, 'chats'),
+                  where('donationId', '==', donation.id)
+                );
+
+                const chatSnap = await getDocs(chatQuery);
+                chatSnap.forEach(async (chatDoc) => {
+                  await updateDoc(chatDoc.ref, { closed: true });
+                });
+
+                alert('Você desistiu da doação com sucesso.');
+              } catch (error) {
+                console.error('Erro ao desistir da doação:', error);
+                alert('Erro ao desistir da doação. Tente novamente.');
+              }
+            };
+
             return (
               <div
                 key={d.id}
@@ -290,13 +323,22 @@ const MyDonations = () => {
                       Concluir
                     </HoverButton>
                   ) : (
-                    <HoverButton
-                      baseStyle={{ ...styles.baseBtn, ...styles.receiveBtn }}
-                      hoverStyle={styles.hoverReceive}
-                      onClick={() => concludeDonation(d)}
-                    >
-                      Recebi a doação
-                    </HoverButton>
+                    <>
+                      <HoverButton
+                        baseStyle={{ ...styles.baseBtn, ...styles.receiveBtn }}
+                        hoverStyle={styles.hoverReceive}
+                        onClick={() => concludeDonation(d)}
+                      >
+                        Recebi a doação
+                      </HoverButton>
+                      <HoverButton
+                        baseStyle={{ ...styles.baseBtn, ...styles.cancelBtn }}
+                        hoverStyle={styles.hoverCancel}
+                        onClick={() => handleGiveUp(d)}
+                      >
+                        Desistir da doação
+                      </HoverButton>
+                    </>
                   )}
                 </div>
               </div>
@@ -304,8 +346,11 @@ const MyDonations = () => {
           })}
         </div>
       ) : (
-        <p style={{ textAlign: "center", color: "white" }}>Nenhuma doação em andamento.</p>
+        <p style={{ textAlign: "center", color: "white" }}>
+          Nenhuma doação em andamento.
+        </p>
       )}
+
 
       <h2 style={{ textAlign: "center", margin: "40px 0 20px" }}>Doações Concluídas</h2>
       {concluded.length ? (
