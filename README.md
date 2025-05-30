@@ -214,3 +214,6 @@ O site ficará disponível em https://<seu-projeto>.web.app
 4. Push para sua branch: git push origin feature/nome-da-feature
 
 5. Abra um Pull Request
+
+
+# Obrigado!
