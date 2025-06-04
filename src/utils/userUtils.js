@@ -24,7 +24,7 @@ export const createUserDocumentIfNotExists = async (user, extraData = {}) => {
 };
 
 export const checkUserDonationsStatus = async (userId) => {
-  const donationsRef = collection(db, "donations");
+  const donationsRef = collection(db, "donationItems");
   const q = query(donationsRef, where("userId", "==", userId), where("status", "==", "em andamento"));
   const querySnapshot = await getDocs(q);
   return !querySnapshot.empty;
@@ -35,7 +35,7 @@ export const deleteUserAndDonations = async (userId) => {
   try {
     await runTransaction(db, async (transaction) => {
       // Referência para a coleção de doações
-      const donationsRef = collection(db, "donations");
+      const donationsRef = collection(db, "donationItems");
 
       // Consulta para encontrar todas as doações do usuário com status "disponível"
       const q = query(donationsRef, where("userId", "==", userId), where("status", "==", "disponível"));
