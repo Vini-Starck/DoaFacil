@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 
 const firebaseConfig = {
@@ -19,3 +20,8 @@ export const googleProvider = new GoogleAuthProvider();
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LcpCVUrAAAAAAaSGGhffl4v_EHkYP-dwxvX3etI'),
+  isTokenAutoRefreshEnabled: true
+});
