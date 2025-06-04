@@ -52,6 +52,9 @@ function App() {
         display: "flex",
         flexDirection: "column",
       }}
+
+
+      
     >
       <Header />
       <main style={{ flex: 1 }}>
