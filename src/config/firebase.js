@@ -15,13 +15,15 @@ const firebaseConfig = {
   };
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
 
-export const db = getFirestore(app);
-export const storage = getStorage(app);
 
 initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider('6LcpCVUrAAAAAAaSGGhffl4v_EHkYP-dwxvX3etI'),
   isTokenAutoRefreshEnabled: true
 });
+
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+
+export const db = getFirestore(app);
+export const storage = getStorage(app);
