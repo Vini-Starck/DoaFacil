@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import AdSense from './AdSense';
 import logo from '../icons/logo.png';
 
 const Dashboard = () => {
@@ -58,9 +57,7 @@ const Dashboard = () => {
 
   return (
     <div style={styles.page}>
-      <div style={{ marginBottom: 24 }}>
-        <AdSense adSlot="4451812486" style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }} />
-      </div>
+      
       <div style={styles.container}>
         <div style={styles.header}>
           <img src={logo} alt="DoaFácil logo" style={styles.logo} />
@@ -80,9 +77,7 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
-      <div style={{ marginTop: 24 }}>
-        <AdSense adSlot="4451812486" style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }} />
-      </div>
+      
     </div>
   );
 };

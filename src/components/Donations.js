@@ -3,7 +3,7 @@ import { useAuth } from "../AuthContext";
 import { db, storage } from "../config/firebase";
 import { getDocs, collection, doc, getDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
-import AdSense from "./AdSense";
+
 import { useNavigate } from "react-router-dom";
 
 const donationTypes = [
@@ -178,13 +178,7 @@ const Donations = ({ onDonationClick, reportedDonationIds }) => {
     <section style={styles.page}>
 
 
-      {/* AdSense acima dos filtros/lista */}
-      <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+      
 
 
       <div style={styles.container}>
@@ -318,13 +312,7 @@ const Donations = ({ onDonationClick, reportedDonationIds }) => {
       )}
 
       </div>
-      {/* AdSense abaixo da lista */}
-      <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+      
     </section>
   );
 };

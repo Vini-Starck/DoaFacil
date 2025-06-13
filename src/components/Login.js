@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../config/firebase';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { createUserDocumentIfNotExists } from '../utils/userUtils';
-import AdSense from './AdSense';
 import logo from "../icons/logo.png";
 import logoText from "../icons/logoEscrito.png";
 
@@ -174,13 +173,7 @@ const Login = () => {
 
   return (
     <div style={styles.page}>
-      {/* AdSense acima do formulário */}
-      <div style={{ marginBottom: 24 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+      
       <div style={styles.container}>
         {/* Logo e nome do app */}
         <div style={styles.logoBox}>
@@ -237,13 +230,7 @@ const Login = () => {
           <a href="/register" style={styles.link}>Cadastre-se</a>
         </div>
       </div>
-      {/* AdSense abaixo do formulário */}
-      <div style={{ marginTop: 24 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+      
     </div>
   );
 };

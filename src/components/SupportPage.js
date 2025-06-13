@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../AuthContext';
-import AdSense from './AdSense';
+
 
 const categories = [
   'Erro de Navegação',
@@ -49,12 +49,7 @@ export default function SupportPage() {
 
   return (
     <div style={styles.page}>
-      <div style={{ margin: '0 auto 24px', maxWidth: 320 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+      
       <button onClick={() => navigate(-1)} style={styles.backButton}>
         &larr; Voltar
       </button>
@@ -103,12 +98,7 @@ export default function SupportPage() {
           </button>
         </form>
       </div>
-      <div style={{ margin: '24px auto 0', maxWidth: 320 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+      
     </div>
   );
 }

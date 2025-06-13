@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import ConcludeDetailModal from "./ConcludeDetailModal";
 import { deleteUserAndDonations } from "../utils/userUtils";
-import AdSense from './AdSense';
+
 import logo from "../icons/logo.png";
 import logoText from "../icons/logoEscrito.png";
 import defaultProfilePic from "../icons/default-profile.png";
@@ -157,9 +157,7 @@ const Profile = () => {
 
   return (
     <div style={styles.page}>
-      <div style={{ marginBottom: 24 }}>
-        <AdSense adSlot="4451812486" style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }} />
-      </div>
+      
 
       <div style={styles.container}>
         <div style={styles.logoBox}>
@@ -264,9 +262,7 @@ const Profile = () => {
         />
       )}
 
-      <div style={{ marginTop: 24 }}>
-        <AdSense adSlot="4451812486" style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }} />
-      </div>
+      
     </div>
   );
 };

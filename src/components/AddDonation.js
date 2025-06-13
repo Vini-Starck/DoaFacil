@@ -6,7 +6,7 @@ import { db, auth, storage } from "../config/firebase";
 import { getDoc, doc, updateDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
 import CustomPlacesAutocomplete from "./CustomPlacesAutocomplete";
-import AdSense from "./AdSense";
+
 import { FaRocket, FaArrowRight, FaPlus, FaTrash, FaMapMarkerAlt, FaImage } from "react-icons/fa";
 
 const donationTypes = ["Alimentos", "Brinquedos", "Roupas", "Móveis", "Eletrônicos", "Eletrodomésticos", "Outros"];
@@ -223,7 +223,7 @@ const AddDonation = () => {
       borderRadius: '1rem', 
       boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
     }}>
-      <AdSense adSlot="4451812486" style={{ marginBottom: '1rem' }} />
+      
       <h2 style={{ marginBottom: '1rem', color: '#007bff' }}>Fazer uma Doação</h2>
       <p>Doações restantes: <strong>{donationsLeft}</strong></p>
       <form onSubmit={handleSubmit}>
@@ -266,7 +266,7 @@ const AddDonation = () => {
 
         <button type="submit" style={{ background: '#007bff', color: '#fff', padding: '0.75rem 1.5rem', border: 'none', borderRadius: '0.5rem', width: '100%' }}>Cadastrar Doação</button>
       </form>
-      <AdSense adSlot="4451812486" style={{ marginTop: '1rem' }} />
+      
     </div>
 );
 };

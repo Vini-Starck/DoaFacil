@@ -19,7 +19,7 @@ import {
 import { Link } from "react-router-dom";
 import { db } from "../config/firebase";
 import { useAuth } from "../AuthContext";
-import AdSense from "./AdSense"; // Importando AdSense
+
 import defaultProfilePic from "../icons/default-profile.png"; // Imagem padrão de perfil
 
 
@@ -244,13 +244,7 @@ const handleAcceptDonationRequest = async notif => {
 
   return (
   <div style={{ display: "flex", justifyContent: "center", gap: 20, padding: 20 }}>
-    {/* Anúncio à esquerda */}
-    <div style={{ flex: "0 0 320px", display: "flex", justifyContent: "center" }}>
-      <AdSense
-        adSlot="4451812486"
-        style={{ display: 'block', margin: '20px auto', maxWidth: '320px' }}
-      />
-    </div>
+    
 
     {/* Notificações centralizadas */}
     <div style={{ flex: "1 1 600px", maxWidth: 600 }}>
@@ -276,13 +270,7 @@ const handleAcceptDonationRequest = async notif => {
       />
     </div>
 
-    {/* Anúncio à direita */}
-    <div style={{ flex: "0 0 320px", display: "flex", justifyContent: "center" }}>
-      <AdSense
-        adSlot="4451812486"
-        style={{ display: 'block', margin: '20px auto', maxWidth: '320px' }}
-      />
-    </div>
+   
   </div>
 );
 

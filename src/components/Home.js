@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from "../AuthContext";
-import AdSense from "../components/AdSense";
 import logo from "../icons/logo.png";
 import logoText from "../icons/logoEscrito.png";
 
@@ -11,13 +10,7 @@ const Home = () => {
 
   return (
     <div style={styles.page}>
-      {/* AdSense acima do conteúdo */}
-      <div style={{ margin: "0 auto 24px", maxWidth: 320 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+      
 
       <header style={styles.header}>
         <img src={logo} alt="Logo DoaFácil" style={styles.logoImg} />
@@ -130,13 +123,7 @@ const Home = () => {
         )}
       </section>
 
-      {/* AdSense abaixo do conteúdo */}
-      <div style={{ margin: "24px auto 0", maxWidth: 320 }}>
-        <AdSense
-          adSlot="4451812486"
-          style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }}
-        />
-      </div>
+     
     </div>
   );
 };

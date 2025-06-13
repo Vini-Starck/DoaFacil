@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import AdSense from './AdSense';
+
 
 
 const steps = [
@@ -109,9 +109,7 @@ const ComoUsar = () => {
 
   return (
     <div style={styles.page}>
-      <div style={{ marginBottom: 24 }}>
-        <AdSense adSlot="4451812486" style={{ display: 'block', margin: '0 auto', maxWidth: '320px' }} />
-      </div>
+      
       <div style={styles.container}>
         <h1 style={styles.title}>Como Usar o DoaFácil</h1>
         {steps.map((step, idx) => (
