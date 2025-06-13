@@ -11,6 +11,7 @@ const plans = [
     title: 'Plano Básico',
     requests: 3,
     donations: 5,
+    price: 500, // R$ 5,00
     paymentUrl: 'https://www.abacatepay.com/pay/bill_D0WQ1QCmdQy3jNuhxuQCQXgB'
   },
   {
@@ -18,6 +19,7 @@ const plans = [
     title: 'Plano Intermediário',
     requests: 5,
     donations: 10,
+    price: 900, // R$ 9,00
     paymentUrl: 'https://www.abacatepay.com/pay/bill_PzyaRUsCEAhE6x1upm5nBEb5'
   },
   {
@@ -25,6 +27,7 @@ const plans = [
     title: 'Plano Avançado',
     requests: 10,
     donations: 20,
+    price: 1500, // R$ 15,00
     paymentUrl: 'https://www.abacatepay.com/pay/bill_rDCKMeunrucwNJeCqJtCdayA'
   }
 ];
