@@ -11,7 +11,6 @@ const plans = [
     title: 'Plano Básico',
     requests: 3,
     donations: 5,
-    price: 500,
     paymentUrl: 'https://www.abacatepay.com/pay/bill_D0WQ1QCmdQy3jNuhxuQCQXgB'
   },
   {
@@ -19,7 +18,6 @@ const plans = [
     title: 'Plano Intermediário',
     requests: 5,
     donations: 10,
-    price: 900,
     paymentUrl: 'https://www.abacatepay.com/pay/bill_PzyaRUsCEAhE6x1upm5nBEb5'
   },
   {
@@ -27,7 +25,6 @@ const plans = [
     title: 'Plano Avançado',
     requests: 10,
     donations: 20,
-    price: 1500,
     paymentUrl: 'https://www.abacatepay.com/pay/bill_rDCKMeunrucwNJeCqJtCdayA'
   }
 ];
@@ -53,8 +50,8 @@ export default function Plans() {
           try {
             const snap = await getDoc(userRef);
             const data = snap.exists() ? snap.data() : {};
-            const currentRequests = data.requestsLeft;
-            const currentDonations = data.donationsLeft;
+            const currentRequests = data.requestsLeft ?? 0;
+            const currentDonations = data.donationsLeft ?? 0;
             await updateDoc(userRef, {
               requestsLeft: currentRequests + plan.requests,
               donationsLeft: currentDonations + plan.donations
