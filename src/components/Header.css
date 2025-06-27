@@ -1,21 +1,21 @@
 /* Esconde o menu hambúrguer em telas de desktop */
 .hamburger-menu {
-  display: none;
-}
-
-/* Regra para telas mobile */
-@media (max-width: 768px) {
-  
-  /* Esconde a navegação principal de desktop */
-  .desktop-nav {
     display: none;
   }
-
-  /* Mostra o menu hambúrguer */
-  .hamburger-menu {
-    display: flex; /* Usamos flex para alinhar as barras verticalmente */
-    flex-direction: column;
-    cursor: pointer;
-    gap: 4px; /* Espaçamento entre as barras */
+  
+  /* Regra para telas mobile */
+  @media (max-width: 768px) {
+    
+    /* Esconde a navegação principal de desktop */
+    .desktop-nav {
+      display: none;
+    }
+  
+    /* Mostra o menu hambúrguer */
+    .hamburger-menu {
+      display: flex; /* Usamos flex para alinhar as barras verticalmente */
+      flex-direction: column;
+      cursor: pointer;
+      gap: 4px; /* Espaçamento entre as barras */
+    }
   }
-}

@@ -1,0 +1,325 @@
+/* src/components/Donations.css */
+.donations-page {
+  min-height: 100vh;
+  padding: 0 0 40px 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.donations-container {
+  background: rgba(255,255,255,0.97);
+  border-radius: 16px;
+  max-width: 1200px;
+  margin: 0 auto 32px;
+  padding: 36px 24px 28px 24px;
+  box-shadow: 0 8px 32px rgba(40, 167, 69, 0.10), 0 1.5px 8px rgba(0,0,0,0.08);
+}
+
+.donations-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #28a745;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.requests-info {
+  text-align: center;
+  margin-bottom: 16px;
+  font-weight: bold;
+}
+
+.requests-info.limit-reached {
+  color: red;
+}
+
+.requests-info.available {
+  color: #28a745;
+}
+
+.plans-button-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.plans-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 32px;
+  align-items: center;
+  justify-content: center;
+}
+
+.filters-bar input,
+.filters-bar select {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #e0e0e0;
+  font-size: 16px;
+  min-width: 220px; /* Ajustar min-width para campos de texto */
+  outline: none;
+  background: #fafbfc;
+  transition: border 0.2s;
+}
+
+.filters-bar select {
+    min-width: 150px; /* Manter min-width para selects */
+}
+
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: #222;
+  font-weight: 500;
+  background: #f6f6f6;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  border: 1.5px solid #e0e0e0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: #28a745;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  cursor: pointer;
+}
+
+.donations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 28px;
+  padding: 10px 0;
+}
+
+.donation-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(40,167,69,0.08);
+  background-color: #fff;
+  cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s;
+  transform: scale(1);
+  border: 1.5px solid #e0e0e0;
+  min-height: 340px;
+  position: relative;
+}
+
+.donation-card:hover {
+  transform: scale(1.045);
+  box-shadow: 0 8px 24px rgba(40,167,69,0.16);
+  border: 1.5px solid #28a745;
+}
+
+.card-image {
+  width: 100%;
+  max-width: 210px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #dbdbdb;
+  margin-bottom: 14px;
+  background: #fafbfc;
+}
+
+.no-image {
+  width: 210px;
+  height: 180px;
+  border-radius: 10px;
+  background: #f0f0f0;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: italic;
+  margin-bottom: 14px;
+  font-size: 15px;
+  border: 2px dashed #dbdbdb;
+}
+
+.card-content {
+  width: 100%;
+  text-align: center;
+}
+
+.card-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: #28a745;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-desc {
+  margin: 0 0 10px;
+  color: #444;
+  font-size: 15px;
+  min-height: 38px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.card-type {
+  background: #e8f5e9;
+  color: #28a745;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.card-city {
+  background: #f0f0f0;
+  color: #007bff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.card-distance {
+  background: #e3eafc;
+  color: #007bff;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.no-results {
+  text-align: center;
+  color: #666;
+  font-size: 18px;
+  margin: 40px 0;
+}
+
+
+/* Media Queries para responsividade */
+@media (max-width: 768px) {
+  .donations-container {
+    padding: 20px 15px; /* Diminuir padding em telas menores */
+  }
+
+  .donations-title {
+    font-size: 26px; /* Diminuir tamanho do título */
+  }
+
+  .filters-bar {
+    flex-direction: column; /* Empilhar filtros em telas menores */
+    align-items: stretch; /* Esticar itens para preencher a largura */
+  }
+
+  .filters-bar input,
+  .filters-bar select {
+    min-width: unset; /* Remover min-width fixo */
+    width: 100%; /* Fazer inputs e selects ocuparem a largura total */
+  }
+
+  .checkbox-label {
+      justify-content: center; /* Centralizar o conteúdo do checkbox */
+  }
+
+  .donations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Ajustar minmax para cards menores */
+    gap: 20px; /* Diminuir o gap entre os cards */
+  }
+
+  .donation-card {
+    padding: 15px; /* Diminuir padding do card */
+    min-height: 320px;
+  }
+
+  .card-image,
+  .no-image {
+    max-width: 180px; /* Diminuir tamanho da imagem */
+    height: 150px;
+  }
+
+  .card-title {
+    font-size: 18px; /* Diminuir tamanho do título do card */
+  }
+
+  .card-desc {
+    font-size: 14px; /* Diminuir tamanho da descrição do card */
+    min-height: 36px;
+  }
+
+  .card-meta {
+    gap: 8px; /* Diminuir gap entre os meta dados */
+    font-size: 13px;
+  }
+
+  .card-type,
+  .card-city,
+  .card-distance {
+    padding: 2px 8px; /* Diminuir padding dos meta dados */
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+    .donations-container {
+        padding: 15px 10px;
+    }
+
+    .donations-title {
+        font-size: 22px;
+    }
+
+    .donations-grid {
+        grid-template-columns: 1fr; /* Uma coluna em telas muito pequenas */
+    }
+
+    .donation-card {
+        align-items: stretch; /* Esticar o conteúdo do card */
+        text-align: left;
+        min-height: unset; /* Remover altura mínima fixa */
+    }
+
+    .card-image,
+    .no-image {
+        width: 100%; /* Imagem ocupa a largura total */
+        max-width: unset; /* Remover max-width */
+        height: auto; /* Altura automática para manter proporção */
+        margin-bottom: 10px;
+    }
+
+    .card-content {
+        text-align: left; /* Alinhar conteúdo do card à esquerda */
+    }
+
+    .card-meta {
+        justify-content: flex-start; /* Alinhar meta dados à esquerda */
+    }
+}
