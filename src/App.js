@@ -21,7 +21,6 @@ import PrivateRoute from "./components/PrivateRoute";
 import EditDonation from "./components/EditDonation";
 import SupportPage from "./components/SupportPage";
 import TermsOfUse from "./components/TermoDeUso";
-import CheckEmail from "./components/CheckEmail";
 import ComoUsar from "./components/ComoUsar";
 import Dashboard from "./components/Dashboard";
 import ConcludeDetailModal from "./components/ConcludeDetailModal";
@@ -98,7 +97,6 @@ function App() {
           <Route path="/edit-donation/:id" element={<PrivateRoute element={<EditDonation />} />} />
           <Route path="/support" element={<PrivateRoute element={<SupportPage />} />} />
           <Route path="/terms" element={<TermsOfUse />} />
-          <Route path="/check-email" element={<CheckEmail />} />
           <Route path="/como-usar" element={<ComoUsar />} />
           <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
           <Route path="/plans" element={<PrivateRoute element={<Plans />} />} />
