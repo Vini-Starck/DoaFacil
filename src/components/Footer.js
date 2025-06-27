@@ -12,7 +12,9 @@ const Footer = () => {
         </Link>
       </div>
       <p>© {new Date().getFullYear()} Todos os direitos reservados.</p>
-      <div className="footer-links"> {/* Apply the 'footer-links' class */}
+      <p>Desenvolvido por <a href="https://starck-portifolio.web.app/" target="_blank" rel="noopener noreferrer" style={{ background: 'linear-gradient(#007bff 52%, #28a745 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Vinícius Starck</a></p>
+
+      <div className="footer-links">
         <Link to="/">Sobre</Link>
         <Link to="/support">Suporte</Link>
       </div>
