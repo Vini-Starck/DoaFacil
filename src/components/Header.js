@@ -35,10 +35,13 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detecta se estamos em mobile (< 768px)
+  // Detecta se estamos em mobile (< 1024px)
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    onResize();
+    const MOBILE_BREAKPOINT = 1024;      // novo
+    const onResize = () =>
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+
+    onResize();                          // chama na montagem
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);

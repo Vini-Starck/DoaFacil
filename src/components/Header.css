@@ -4,7 +4,7 @@
   }
   
   /* Regra para telas mobile */
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     
     /* Esconde a navegação principal de desktop */
     .desktop-nav {
