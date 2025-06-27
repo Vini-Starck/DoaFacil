@@ -63,39 +63,53 @@ const Header = () => {
 
   // MODIFICADO: A lógica de estilo foi atualizada para incluir o estado "ativo"
   const renderNavList = () => {
-    const listStyle = isMobile ? styles.mobileNavList : styles.navList;
+    // 1 ▸ UL recebe o mesmo recuo lateral do header
+    const listStyle = isMobile
+      ? {
+          ...styles.mobileNavList,
+          margin: "0 24px",   // alinha com padding do header
+          overflowX: "hidden" // evita scroll lateral se algo se esticar
+        }
+      : styles.navList;
+  
     return (
       <ul style={listStyle}>
         {navItems.map((item, idx) => {
-          // NOVO: Verificamos se o link corresponde à página atual
           const isActive = location.pathname === item.path;
-          
-          // MODIFICADO: A lógica de estilo agora considera `isActive`
-          const linkStyle = {
+  
+          const baseLinkStyle = {
             ...styles.navLink,
             background:
               isActive || hoverNav === idx
                 ? "linear-gradient(90deg, #28a745 60%, #007bff 100%)"
                 : "transparent",
             color: isActive || hoverNav === idx ? "#fff" : "#222",
-            transform: isActive || hoverNav === idx ? "scale(1.08)" : "scale(1)",
+            transform: isActive || hoverNav === idx ? "scale(1.05)" : "scale(1)",
+            transformOrigin: "center",
             boxShadow:
               isActive || hoverNav === idx
                 ? "0 2px 8px rgba(40,167,69,0.10)"
-                : "none",
+                : "none"
           };
-          
+  
+          // 2 ▸ No mobile o link vira block, mas limitado ao contêiner
           const mobileLinkStyle = isMobile
             ? {
-                ...linkStyle,
+                ...baseLinkStyle,
                 display: "block",
                 width: "100%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
                 padding: "12px 16px",
                 borderRadius: 0,
-                textAlign: "center",
+                textAlign: "center"
               }
-            : linkStyle;
-
+            : {
+                ...baseLinkStyle,
+                width: "auto",
+                display: "inline-block"
+              };
+  
           return (
             <li
               key={idx}
@@ -112,6 +126,7 @@ const Header = () => {
       </ul>
     );
   };
+  
 
   return (
     <header style={styles.header}>

@@ -18,4 +18,10 @@
       cursor: pointer;
       gap: 4px; /* Espaçamento entre as barras */
     }
+    
+    .mobile-menu-fix {
+        margin: 0 24px;   /* mesmo recuo lateral do header */
+        overflow-x: hidden;
+    }
+
   }

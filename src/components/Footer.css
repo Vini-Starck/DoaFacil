@@ -22,7 +22,7 @@
 }
 
 /* Adicionar media queries para responsividade */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .footer {
     padding: 15px; /* Diminuir o padding em telas menores */
   }
