@@ -10,6 +10,11 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
 
+    # ✅ Injeta os secrets como variáveis de ambiente em todos os passos do job
+    env:
+      REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
+      REACT_APP_ABACATEPAY_TOKEN: ${{ secrets.REACT_APP_ABACATEPAY_TOKEN }}
+
     steps:
       # 1. Checkout do código
       - uses: actions/checkout@v4
@@ -26,21 +31,15 @@ jobs:
       # 4. Debug opcional — valida a existência da chave
       - name: Verificar variável de ambiente (Google Maps Key)
         run: |
+          echo "Tamanho da chave: ${#REACT_APP_GOOGLE_MAPS_API_KEY}"
           if [[ -z "$REACT_APP_GOOGLE_MAPS_API_KEY" ]]; then
             echo "::error ::A variável REACT_APP_GOOGLE_MAPS_API_KEY está vazia ou ausente!"
             exit 1
-          else
-            echo "✅ Variável REACT_APP_GOOGLE_MAPS_API_KEY está presente (tamanho: ${#REACT_APP_GOOGLE_MAPS_API_KEY} caracteres)."
           fi
-        env:
-          REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
 
-      # 5. Build do React App (aqui as variáveis precisam estar corretamente injetadas)
+      # 5. Build do React App — aqui CRA lê as variáveis REACT_APP_*
       - name: Build React app
         run: npm run build
-        env:
-          REACT_APP_GOOGLE_MAPS_API_KEY: ${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
-          REACT_APP_ABACATEPAY_TOKEN: ${{ secrets.REACT_APP_ABACATEPAY_TOKEN }}
 
       # 6. Deploy para o Firebase Hosting
       - uses: FirebaseExtended/action-hosting-deploy@v0

@@ -25,10 +25,6 @@ export default function MapPage({ reportedDonationIds = [], onReport }) {
     libraries: LIBRARIES,
   });
 
-  // logo após o useJsApiLoader, em qualquer componente:
-  console.log('GMAPS KEY:', process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
-
-
   // 1) Pega posição
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
