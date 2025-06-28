@@ -21,7 +21,7 @@ export default function MapPage({ reportedDonationIds = [], onReport }) {
   const [selectedDonation, setSelectedDonation] = useState(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: "AIzaSyDmkiXWowTV3HqXJF9sQFIrpImFOxC3lGA",// process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
   });
 
